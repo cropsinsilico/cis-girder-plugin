@@ -1,3 +1,5 @@
 FROM girder/girder:2.3.0
 
-COPY . /girder/plugins/cis/
+ARG PLUGIN_NAME="cis"
+
+COPY . /girder/plugins/${PLUGIN_NAME}/
