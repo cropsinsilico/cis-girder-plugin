@@ -27,12 +27,14 @@ You can then run this image in place of your existing one to enable the plugin.
 Simply clone this repo into your `/girder/plugins` directory - you may need to restart the server to see the new plugin.
 
 # Development
-1. Import the `girder23` application (seen below) into Workbench catalog
-2. Add an instance of `girder23` and a Cloud9 Python IDE from the catalog
-3. On the dashboard, edit your Cloud9 IDE's `Data` tab to mount `AppData/stackid-girder23` to `/workspace`
-    * Make sure to substitute in the stackid of your new girder application
-4. Start up the Girder and Cloud9 IDE applications
-5. Clone this repository into your Cloud9 `/workspace`
+1. Navigate and **Login** to the [Workbench](https://www.workbench.nationaldataservice.org)
+2. Import the `girder23` application (seen below) into your Workbench **Catalog**
+3. Add an instance of `girder23` and a Cloud9 Python IDE from the **Catalog**
+4. On the **Dashboard**, edit your Cloud9 IDE's `Data` tab to mount `AppData/stackid-girder23` to `/workspace`
+    * Make sure to substitute the stackid of your new `girder23` application
+5. On the **Dashboard**, start up the Girder and Cloud9 IDE applications
+6. Once Cloud9 is "Running" (e.g. turns green), click the link on the **Dashboard** to the IDE
+6. Inside the IDE, use the terminal at the bottom to clone this repository into your Cloud9 `/workspace`
 
 ## The `girder23` Application
 ```
