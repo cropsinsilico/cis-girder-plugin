@@ -30,7 +30,7 @@ class Models(Resource):
 
     @access.public
     def getModels(self, params):
-        return [ '1', '2', '3', '4' ]
+        return [ "1", "2", "3", "4" ]
         
-    getModels.description = Description('Returns "hello world!"')
+    getModels.description = Description('Returns a list of models for use with cis_interface')
 
