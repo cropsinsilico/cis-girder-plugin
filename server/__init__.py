@@ -26,5 +26,5 @@ from .models_rest import Models
 
 
 def load(info):
-    # Bind our hello REST resource
+    # Bind our models REST resource
     info['apiRoot'].models = Models()
