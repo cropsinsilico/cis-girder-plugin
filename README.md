@@ -13,6 +13,9 @@ From here, you should see the new plugin listed and be offered an option to enab
 
 If you do choose to enable it, you will be prompted to automatically restart/rebuild Girder.
 
+## Without Docker
+Simply clone this repo into your `/girder/plugins` directory - you may need to restart the server to see the new plugin.
+
 ## With Docker
 This plugin will need to be copied into your Docker image for Girder.
 
@@ -21,10 +24,7 @@ Run the following command to produce a Docker image containing the plugin
 docker build -t girder/girder:cis .
 ```
 
-You can then run this image in place of your existing one to enable the plugin.
-
-## Without Docker
-Simply clone this repo into your `/girder/plugins` directory - you may need to restart the server to see the new plugin.
+You can then run this image in place of your existing one to access the plugin.
 
 # Development
 1. Navigate and **Login** to the [Workbench](https://www.workbench.nationaldataservice.org)
