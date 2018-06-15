@@ -1,5 +1,5 @@
 # cis-girder-plugin
-Adds API endpoints for interacting with the Crops in Silico framework.
+Adds API endpoints to Girder 2.3 for interacting with the Crops in Silico framework.
 
 # Overview
 This is a jumping-off point for creating a new server-side REST API plugin for Girder.
