@@ -1,0 +1,6 @@
+{
+    "name": "Crops in Silico API Endpoints",
+    "description": "Adds API endpoints for interacting with the Crops in Silico framework.",
+    "version": "0.1.0",
+    "dependencies": []
+}
