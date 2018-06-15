@@ -7,7 +7,7 @@ This is a jumping-off point for creating a new server-side REST API plugin for G
 This plugin was developed using the Labs Workbench: https://www.workbench.nationaldataservice.org
 
 # Usage
-To use this plugin, simply load it into your Girder instance/image, login as an administratorm and navigate to the "Plugins" page
+To use this plugin, simply load it into your Girder instance/image, login as an administrator and navigate to the "Plugins" page
 
 From here, you should see the new plugin listed and be offered an option to enable it.
 
