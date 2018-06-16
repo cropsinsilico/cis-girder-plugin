@@ -1,6 +1,6 @@
 {
-    "name": "Crops in Silico API Endpoints",
-    "description": "Adds API endpoints for interacting with the Crops in Silico framework.",
-    "version": "0.1.0",
-    "dependencies": []
+    "name": "Crops In Silico",
+    "description": "Adds Crops-In-Silico API endpoints to Girder",
+    "url": "https://github.com/cropsinsilico/cis-girder-plugin",
+    "version": "0.0.1"
 }
