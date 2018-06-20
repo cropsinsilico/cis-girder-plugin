@@ -14,7 +14,7 @@ class Graph(AccessControlledModel):
         self.name = 'graph'
         
         self.exposeFields(level=AccessType.READ, fields={
-            '_id', 'name', 'created', 'description', 'content', 'creatorId'})
+            '_id', 'name', 'created', 'description', 'content', 'creatorId', 'public'})
 
         
     def validate(self, graph):
