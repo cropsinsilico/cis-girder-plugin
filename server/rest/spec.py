@@ -30,7 +30,7 @@ specDef = {
         "description": {
             "type": "string"
         },
-        "official": {
+        "public": {
             "type": "boolean",
             "default": False,
             "description": "If set to true the spec is an official spec"
@@ -145,6 +145,6 @@ class Spec(Resource):
         .errorResponse('Access was denied for the spec.', 403)
     )
     def updateSpec(self, specObj, spec, params):
-        return self.model('graph', 'cis').updateGraph(spec)        
+        return self.model('spec', 'cis').updateSpec(spec)        
 
         

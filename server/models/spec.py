@@ -8,6 +8,21 @@ from girder.models.user import User
 import datetime
 
 
+# Example Spec object:
+# {
+#     "name": "inport",
+#     "label": "InPort",
+#     "description": "An input port for the graph",
+#     "icon": "signin",
+#     "driver": "GCCModelDriver",
+#     "args": "unused",
+#     "inports": [],
+#     "outports": [
+#         {"name": "value", "type": "all"}
+#     ]
+# }
+
+
 class Spec(AccessControlledModel):
 
     def initialize(self):
@@ -18,7 +33,7 @@ class Spec(AccessControlledModel):
 
         
     def validate(self, spec):
-        return spec        
+        return spec
 
 
     def list(self, user=None, limit=0, offset=0,
@@ -51,6 +66,8 @@ class Spec(AccessControlledModel):
         
         obj = {
             'name': spec['name'],
+        #    'description': spec['description'],
+        #    'icon': spec['icon'],
             'content': spec['content'],
             'created': now,
             'creatorId': creator['_id']
