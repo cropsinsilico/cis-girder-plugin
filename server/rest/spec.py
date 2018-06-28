@@ -145,6 +145,8 @@ class Spec(Resource):
         .errorResponse('Access was denied for the spec.', 403)
     )
     def updateSpec(self, specObj, spec, params):
-        return self.model('spec', 'cis').updateSpec(spec)        
+        specObj['name'] = spec['name']
+        specObj['content'] = spec['content']
+        return self.model('spec', 'cis').updateSpec(specObj)
 
         
