@@ -5,6 +5,7 @@ from girder.api.rest import Resource, filtermodel, RestException
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import SortDir, AccessType
 from ..models.spec import Spec as SpecModel
+from ..utils import ingest
 
 
 specDef = {
@@ -74,7 +75,16 @@ class Spec(Resource):
         self.route('POST', (), self.createSpec)
         self.route('PUT', (':id',), self.updateSpec)
         self.route('DELETE', (':id',), self.deleteSpec)
+        self.route('PUT', ('ingest',), self.ingestSpecs)
         
+    @access.admin
+    @autoDescribeRoute(
+        Description('Refresh specs from github')
+        .errorResponse('You are not authorized to ingest specs.', 403)
+    )
+    def ingestSpecs(self):
+        ingest()
+
     @access.public
     @filtermodel(model='spec', plugin='cis')
     @autoDescribeRoute(
