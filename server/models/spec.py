@@ -65,8 +65,8 @@ class Spec(AccessControlledModel):
         now = datetime.datetime.utcnow()
         
         obj = {
-            'name': spec['name'],
             'content': spec['content'],
+            'hash': spec['hash'],
             'created': now,
             'creatorId': creator['_id']
         }
