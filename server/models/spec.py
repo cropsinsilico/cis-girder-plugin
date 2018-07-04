@@ -76,6 +76,10 @@ class Spec(AccessControlledModel):
         else:
             obj['public'] = False
 
+        if creator is not None:
+            self.setUserAccess(obj, user=creator, level=AccessType.ADMIN,
+                               save=False)
+
         if save:
             obj = self.save(obj)
 

@@ -108,6 +108,9 @@ class Spec(Resource):
     def createSpec(self, spec):
         user = self.getCurrentUser()
 
+        if 'public' in spec and spec['public'] and not user['admin']:
+            raise RestException('You are not authorized to create public specs', 403)
+
         return self.model('spec', 'cis').createSpec(spec, creator=user, 
             save=True)
 
@@ -145,6 +148,16 @@ class Spec(Resource):
         .errorResponse('Access was denied for the spec.', 403)
     )
     def updateSpec(self, specObj, spec, params):
-        return self.model('spec', 'cis').updateSpec(spec)        
+        user = self.getCurrentUser()
+
+        specObj['name'] = spec['name']
+        specObj['content'] = spec['content']
+
+        if 'public' in spec and spec['public'] and not user['admin']:
+            raise RestException('You are not authorized to create public specs', 403)
+        else:
+            specObj['public'] = spec['public']
+
+        return self.model('spec', 'cis').updateSpec(specObj)
 
         
