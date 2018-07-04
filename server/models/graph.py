@@ -14,7 +14,7 @@ class Graph(AccessControlledModel):
         self.name = 'graph'
         
         self.exposeFields(level=AccessType.READ, fields={
-            '_id', 'name', 'created', 'description', 'content', 'creatorId'})
+            '_id', 'name', 'created', 'description', 'content', 'creatorId', 'public'})
 
         
     def validate(self, graph):
@@ -56,6 +56,11 @@ class Graph(AccessControlledModel):
             'creatorId': creator['_id']
         }
 
+        if graph['public'] and creator.get('admin'):
+            self.setPublic(doc=obj, public=True)
+        else:
+            obj['public'] = False
+
         if save:
             obj = self.save(obj)
 
@@ -70,4 +75,5 @@ class Graph(AccessControlledModel):
         :returns: The graph document that was edited.
         """
         graph['updated'] = datetime.datetime.utcnow()
+        
         return self.save(graph)     

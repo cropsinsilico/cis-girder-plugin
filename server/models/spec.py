@@ -29,7 +29,7 @@ class Spec(AccessControlledModel):
         self.name = 'spec'
         
         self.exposeFields(level=AccessType.READ, fields={
-            '_id', 'name', 'created', 'content', 'description', 'creatorId'})
+            '_id', 'name', 'created', 'content', 'description', 'creatorId', 'public'})
 
         
     def validate(self, spec):
@@ -71,8 +71,10 @@ class Spec(AccessControlledModel):
             'creatorId': creator['_id']
         }
 
-        if 'public' in spec:
-            self.setPublic(obj, spec['public'], save=False)
+        if spec['public'] and creator.get('admin'):
+            self.setPublic(doc=obj, public=True)
+        else:
+            obj['public'] = False
 
         if creator is not None:
             self.setUserAccess(obj, user=creator, level=AccessType.ADMIN,
