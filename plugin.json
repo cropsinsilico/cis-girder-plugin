@@ -2,5 +2,6 @@
     "name": "Crops In Silico",
     "description": "Adds Crops-In-Silico API endpoints to Girder",
     "url": "https://github.com/cropsinsilico/cis-girder-plugin",
-    "version": "0.0.1"
+    "version": "0.0.1",
+    "dependencies": [ "oauth" ]
 }
