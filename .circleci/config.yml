@@ -37,7 +37,7 @@ jobs:
           command: |
             mkdir /girder/build
             cd /girder/build
-            cmake ../girder  -DRUN_CORE_TESTS=OFF -DBUILD_JAVASCRIPT_TESTS=OFF -DPYTHON_STATIC_ANALYSIS=OFF -DJAVASCRIPT_STYLE_TESTS=OFF -DTEST_PLUGINS="cis"
+            cmake /girder  -DRUN_CORE_TESTS=OFF -DBUILD_JAVASCRIPT_TESTS=OFF -DPYTHON_STATIC_ANALYSIS=OFF -DJAVASCRIPT_STYLE_TESTS=OFF -DTEST_PLUGINS="cis"
             ctest -VV
       - run:
           name: Install Codecov client
