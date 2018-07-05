@@ -1,0 +1,94 @@
+{
+  "caseSensitive": false,
+  "properties": {},
+  "inports": {},
+  "outports": {},
+  "groups": [],
+  "processes": {
+    "rf7": {
+      "component": "light",
+      "metadata": {
+        "label": "Light",
+        "x": 1080,
+        "y": 360,
+        "width": 72,
+        "height": 72
+      }
+    },
+    "69v": {
+      "component": "inport",
+      "metadata": {
+        "label": "ambient_light",
+        "x": 648,
+        "y": 144,
+        "width": 72,
+        "height": 72,
+        "name": "./Input/ambient_light.txt",
+        "type": "File",
+        "read_meth": "table"
+      }
+    },
+    "1oza": {
+      "component": "inport",
+      "metadata": {
+        "label": "canopy_structure",
+        "x": 648,
+        "y": 504,
+        "width": 72,
+        "height": 72,
+        "type": "File",
+        "name": "./Input/canopy_structure.txt",
+        "read_meth": "table"
+      }
+    },
+    "r4f": {
+      "component": "outport",
+      "metadata": {
+        "label": "light_intensity",
+        "x": 1368,
+        "y": 360,
+        "width": 72,
+        "height": 72,
+        "write_meth": "table",
+        "type": "File",
+        "name": "./Output/light_intensity.txt"
+      }
+    }
+  },
+  "connections": [
+    {
+      "src": {
+        "process": "1oza",
+        "port": "value"
+      },
+      "tgt": {
+        "process": "rf7",
+        "port": "canopy_structure"
+      },
+      "metadata": {}
+    },
+    {
+      "src": {
+        "process": "69v",
+        "port": "value"
+      },
+      "tgt": {
+        "process": "rf7",
+        "port": "ambient_light"
+      },
+      "metadata": {}
+    },
+    {
+      "src": {
+        "process": "rf7",
+        "port": "light_intensity"
+      },
+      "tgt": {
+        "process": "r4f",
+        "port": "value"
+      },
+      "metadata": {}
+    }
+  ]
+}
+ 

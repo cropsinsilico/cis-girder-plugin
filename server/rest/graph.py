@@ -1,7 +1,7 @@
-from girder.api.rest import Resource
+"""Defines the graph API."""
 from girder.api import access
 from girder.api.docs import addModel
-from girder.api.rest import Resource, filtermodel, RestException
+from girder.api.rest import Resource, filtermodel
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import SortDir, AccessType
 from ..models.graph import Graph as GraphModel
@@ -41,7 +41,7 @@ graphDef = {
         },
         "creatorId": {
             "type": "string",
-            "description": "A unique identifier of the user that created the graph."
+            "description": "A unique identifier of user who created the graph."
         },
         "updated": {
             "type": "string",
@@ -63,8 +63,12 @@ graphDef = {
 }
 addModel('graph', graphDef, resources='graph')
 
+
 class Graph(Resource):
+    """Defines graph API."""
+
     def __init__(self):
+        """Initialize the API."""
         super(Graph, self).__init__()
         self.resourceName = 'graph'
         self._model = GraphModel()
@@ -73,7 +77,7 @@ class Graph(Resource):
         self.route('POST', (), self.createGraph)
         self.route('PUT', (':id',), self.updateGraph)
         self.route('DELETE', (':id',), self.deleteGraph)
-        
+
     @access.public
     @filtermodel(model='graph', plugin='cis')
     @autoDescribeRoute(
@@ -85,31 +89,32 @@ class Graph(Resource):
                       defaultSortDir=SortDir.DESCENDING)
     )
     def listGraphs(self, userId, text, limit, offset, sort, params):
+        """List graphs."""
         currentUser = self.getCurrentUser()
         if userId:
             user = self.model('user').load(userId, force=True, exc=True)
         else:
             user = None
-            
+
         return list(self._model.list(
                 user=user, currentUser=currentUser,
                 offset=offset, limit=limit, sort=sort))
-                
-               
 
     @access.user
     @autoDescribeRoute(
         Description('Create a new graph.')
-        .jsonParam('graph', 'Name and attributes of the graph.', paramType='body')
+        .jsonParam('graph', 'Name and attributes of the graph.',
+                   paramType='body')
         .responseClass('graph')
         .errorResponse('You are not authorized to create graphs.', 403)
     )
     def createGraph(self, graph):
+        """Create graph."""
         user = self.getCurrentUser()
 
-        return self.model('graph', 'cis').createGraph(graph, creator=user, 
-            save=True)
-
+        return self.model('graph', 'cis').createGraph(graph,
+                                                      creator=user,
+                                                      save=True)
 
     @access.public
     @filtermodel(model='graph', plugin='cis')
@@ -121,18 +126,21 @@ class Graph(Resource):
         .errorResponse('Read access was denied for the graph', 403)
     )
     def getGraph(self, graph):
-        return graph 
-        
+        """Get graph."""
+        return graph
+
     @access.user
     @autoDescribeRoute(
         Description('Delete an existing graph.')
-        .modelParam('id', 'The ID of the graph.',  model='graph', plugin='cis', level=AccessType.ADMIN)
+        .modelParam('id', 'The ID of the graph.',  model='graph', plugin='cis',
+                    level=AccessType.ADMIN)
         .errorResponse('ID was invalid.')
         .errorResponse('Delete access was denied for the graph.', 403)
     )
     def deleteGraph(self, graph):
+        """Delete graph."""
         self.model('graph', 'cis').remove(graph)
-        
+
     @access.user
     @autoDescribeRoute(
         Description('Update an existing graph.')
@@ -144,4 +152,15 @@ class Graph(Resource):
         .errorResponse('Access was denied for the graph.', 403)
     )
     def updateGraph(self, graphObj, graph, params):
-        return self.model('graph', 'cis').updateGraph(graph)
+        """Update graph."""
+        user = self.getCurrentUser()
+
+        graphObj['name'] = graph['name']
+        graphObj['content'] = graph['content']
+
+        if 'public' in graph and graph['public'] and not user['admin']:
+            raise RestException('Not authorized to create public graphs', 403)
+        elif 'public' in graph:
+            grapObj['public'] = graph['public']
+
+        return self.model('graph', 'cis').updateGraph(graphObj)

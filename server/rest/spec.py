@@ -1,15 +1,21 @@
-from girder.api.rest import Resource
+# -*- coding: utf-8 -*
+"""Defines the spec API."""
 from girder.api import access
 from girder.api.docs import addModel
 from girder.api.rest import Resource, filtermodel, RestException
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import SortDir, AccessType
 from ..models.spec import Spec as SpecModel
-from ..utils import ingest
-
+from ..utils import ingest, fbpToCis
+import pyaml
+import yaml
+from cis_interface.yamlfile import prep_yaml
+from cis_interface.schema import get_schema
+import os
+import tempfile
 
 specDef = {
-    "description": "Object representing a Crops in Silico model specification.",
+    "description": "Object representing a CiS model specification.",
     "required": [
         "_id",
         "name",
@@ -43,7 +49,7 @@ specDef = {
         },
         "creatorId": {
             "type": "string",
-            "description": "A unique identifier of the user that created the spec."
+            "description": "A unique identifier of user who created the spec."
         },
         "updated": {
             "type": "string",
@@ -65,8 +71,12 @@ specDef = {
 }
 addModel('spec', specDef, resources='spec')
 
+
 class Spec(Resource):
+    """Defines spec API."""
+
     def __init__(self):
+        """Initialize spec API."""
         super(Spec, self).__init__()
         self.resourceName = 'spec'
         self._model = SpecModel()
@@ -76,13 +86,15 @@ class Spec(Resource):
         self.route('PUT', (':id',), self.updateSpec)
         self.route('DELETE', (':id',), self.deleteSpec)
         self.route('PUT', ('ingest',), self.ingestSpecs)
-        
+        self.route('POST', ('convert',), self.convertSpec)
+
     @access.admin
     @autoDescribeRoute(
         Description('Refresh specs from github')
-        .errorResponse('You are not authorized to ingest specs.', 403)
+        .errorResponse('Not authorized to ingest specs.', 403)
     )
     def ingestSpecs(self):
+        """Ingest specs."""
         ingest()
 
     @access.public
@@ -96,34 +108,34 @@ class Spec(Resource):
                       defaultSortDir=SortDir.DESCENDING)
     )
     def listSpecs(self, userId, text, limit, offset, sort, params):
+        """List specs."""
         currentUser = self.getCurrentUser()
         if userId:
             user = self.model('user').load(userId, force=True, exc=True)
         else:
             user = None
-            
+
         return list(self._model.list(
                 user=user, currentUser=currentUser,
                 offset=offset, limit=limit, sort=sort))
-                
-               
 
     @access.user
     @autoDescribeRoute(
         Description('Create a new spec.')
-        .jsonParam('spec', 'Name and attributes of the spec.', paramType='body')
+        .jsonParam('spec', 'Name and attributes of the spec.',
+                   paramType='body')
         .responseClass('spec')
-        .errorResponse('You are not authorized to create specs.', 403)
+        .errorResponse('Not authorized to create specs.', 403)
     )
     def createSpec(self, spec):
+        """Create spec."""
         user = self.getCurrentUser()
 
         if 'public' in spec and spec['public'] and not user['admin']:
-            raise RestException('You are not authorized to create public specs', 403)
+            raise RestException('Not authorized to create public specs', 403)
 
-        return self.model('spec', 'cis').createSpec(spec, creator=user, 
-            save=True)
-
+        return self.model('spec', 'cis').createSpec(spec, creator=user,
+                                                    save=True)
 
     @access.public
     @filtermodel(model='spec', plugin='cis')
@@ -135,18 +147,21 @@ class Spec(Resource):
         .errorResponse('Read access was denied for the model', 403)
     )
     def getSpec(self, spec):
-        return spec 
-        
+        """Get spec."""
+        return spec
+
     @access.user
     @autoDescribeRoute(
         Description('Delete an existing spec.')
-        .modelParam('id', 'The ID of the spec.',  model='spec', plugin='cis', level=AccessType.ADMIN)
+        .modelParam('id', 'The ID of the spec.',  model='spec', plugin='cis',
+                    level=AccessType.ADMIN)
         .errorResponse('ID was invalid.')
         .errorResponse('Delete access was denied for the spec.', 403)
     )
     def deleteSpec(self, spec):
+        """Delete spec."""
         self.model('spec', 'cis').remove(spec)
-        
+
     @access.user
     @autoDescribeRoute(
         Description('Update an existing spec.')
@@ -158,14 +173,42 @@ class Spec(Resource):
         .errorResponse('Access was denied for the spec.', 403)
     )
     def updateSpec(self, specObj, spec, params):
+        """Update spec."""
         user = self.getCurrentUser()
 
-        specObj['name'] = spec['name']
         specObj['content'] = spec['content']
 
         if 'public' in spec and spec['public'] and not user['admin']:
-            raise RestException('You are not authorized to create public specs', 403)
-        else:
+            raise RestException('Not authorized to create public specs', 403)
+        elif 'public' in spec:
             specObj['public'] = spec['public']
 
         return self.model('spec', 'cis').updateSpec(specObj)
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Convert a spec from FBP to cisrun format.')
+        .jsonParam('spec', 'Name and attributes of the spec.',
+                   paramType='body')
+        .errorResponse()
+        .errorResponse('Not authorized to convert specs.', 403)
+    )
+    def convertSpec(self, spec):
+        """Convert spec."""
+        cisspec = fbpToCis(spec['content'])
+
+        # Write to temp file and validate
+        tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
+                                              delete=False)
+        yaml.safe_dump(cisspec, tmpfile, default_flow_style=False)
+        yml_prep = prep_yaml(tmpfile)
+        os.remove(tmpfile.name)
+
+        v = get_schema().validator
+        yml_norm = v.normalized(yml_prep)
+        if not v.validate(yml_norm):
+            print(v.errors)
+            raise RestException('Invalid model %s', 400, v.errors)
+
+        self.setRawResponse()
+        return pyaml.dump(cisspec)
