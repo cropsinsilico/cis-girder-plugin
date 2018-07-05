@@ -22,7 +22,7 @@ jobs:
             tar -x -C /usr --strip-components 1 -f "cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
             git clone https://github.com/girder/girder /tmp/girder
             cd /tmp/girder; git checkout tags/v2.3.0
-            set -o pipefail; cd /tmp/girder ; python3 -m pip install -r requirements-dev.txt | cat
+            set -o pipefail; cd /tmp/girder ; pip3 install -r requirements-dev.txt | cat
             cp /tmp/girder/CMakeLists.txt /girder/
             cp -r /tmp/girder/tests /girder/
       - run:
@@ -41,7 +41,7 @@ jobs:
             ctest -VV
       - run:
           name: Install Codecov client
-          command: pip install codecov
+          command: pip3 install codecov
       - run:
           name: Collect coverage reports
           command: cp /girder/.coverage .
