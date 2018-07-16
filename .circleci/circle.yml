@@ -1,0 +1,52 @@
+version: 2.0
+jobs:
+  build:
+    docker:
+      - image: girder/girder:2.3.0
+      - image: mongo:3.2
+    steps:
+      - checkout
+      - run:
+          name: Installing Plugin Dependencies
+          command: |
+            rm -rf /girder/plugins/cis
+            ln -s /root/project /girder/plugins/cis
+            set -o pipefail; pip install -r requirements.txt | cat
+      - run:
+          name: Install Test Dependencies
+          environment:
+            - CMAKE_SHORT_VERSION: "3.4"
+            - CMAKE_VERSION: "3.4.3"
+            - LC_ALL: "C.UTF-8"
+          command: |
+            curl -OL "http://cmake.org/files/v${CMAKE_SHORT_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
+            tar -x -C /usr --strip-components 1 -f "cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
+            git clone https://github.com/girder/girder /tmp/girder
+            cd /tmp/girder; git checkout tags/v2.3.0
+            set -o pipefail; cd /tmp/girder ; python3 -m pip install -r requirements-dev.txt | cat
+            cp /tmp/girder/CMakeLists.txt /girder/
+            cp -r /tmp/girder/tests /girder/
+      - run:
+          name: Running Tests
+          environment:
+            - PYTHON_VERSION: "3.4"
+            - COVERAGE_EXECUTABLE: "/usr/local/bin/coverage"
+            - FLAKE8_EXECUTABLE: "/usr/local/bin/flake8"
+            - VIRTUALENV_EXECUTABLE: "/usr/local/bin/virtualenv"
+            - PYTHON_EXECUTABLE: "/usr/bin/python3"
+            - TEST_GROUP: "python"
+          command: |
+            mkdir /girder/build
+            cd /girder/build
+            cmake ../girder  -DRUN_CORE_TESTS=OFF -DBUILD_JAVASCRIPT_TESTS=OFF -DPYTHON_STATIC_ANALYSIS=OFF -DJAVASCRIPT_STYLE_TESTS=OFF -DTEST_PLUGINS="cis"
+            ctest -VV
+      - run:
+          name: Install Codecov client
+          command: pip install codecov
+      - run:
+          name: Collect coverage reports
+          command: cp /girder/.coverage .
+      - run:
+          name: Uploading Coverage Results
+          command: codecov
+

@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+"""Spec object definition."""
 
 from girder.constants import AccessType
 from girder.models.model_base import AccessControlledModel
-from girder.models.user import User
 import datetime
-
 
 # Example Spec object:
 # {
@@ -24,22 +22,23 @@ import datetime
 
 
 class Spec(AccessControlledModel):
+    """Defines the spec model."""
 
     def initialize(self):
+        """Initialize the model."""
         self.name = 'spec'
-        
+
         self.exposeFields(level=AccessType.READ, fields={
-            '_id', 'name', 'created', 'content', 'description', 'creatorId', 'public'})
+            '_id', 'name', 'created', 'content', 'description',
+            'creatorId', 'public'})
 
-        
     def validate(self, spec):
+        """Validate the model."""
         return spec
-
 
     def list(self, user=None, limit=0, offset=0,
              sort=None, currentUser=None):
-        """
-        List a page of model specs for a given user.
+        """List a page of model specs for a given user.
 
         :param user: The user who owns the model spec.
         :type user: dict or None
@@ -59,22 +58,24 @@ class Spec(AccessControlledModel):
             yield r
 
     def removeSpec(self, spec, token):
+        """Remove a spec."""
         self.remove(spec)
 
     def createSpec(self, spec=None, creator=None, save=True):
+        """Create a spec."""
         now = datetime.datetime.utcnow()
-        
+
         obj = {
             'content': spec['content'],
-            'hash': spec['hash'],
+            'hash': spec.get('hash', ''),
             'created': now,
             'creatorId': creator['_id']
         }
 
-        if spec['public'] and creator.get('admin'):
-            self.setPublic(doc=obj, public=True)
+        if 'public' in spec and creator.get('admin'):
+            self.setPublic(doc=obj, public=spec['public'])
         else:
-            obj['public'] = False
+            self.setPublic(doc=obj, public=False)
 
         if creator is not None:
             self.setUserAccess(obj, user=creator, level=AccessType.ADMIN,
@@ -84,14 +85,13 @@ class Spec(AccessControlledModel):
             obj = self.save(obj)
 
         return obj
-   
+
     def updateSpec(self, spec):
-        """
-        Updates a spec.
+        """Update a spec.
+
         :param spec: The spec document to update.
         :type spec: dict
         :returns: The spec document that was edited.
         """
         spec['updated'] = datetime.datetime.utcnow()
-        return self.save(spec)        
-        
+        return self.save(spec)
