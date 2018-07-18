@@ -1,0 +1,15 @@
+FROM girder/girder:2.3.0
+
+ENV CMAKE_SHORT_VERSION "3.4"
+ENV CMAKE_VERSION "3.4.3"
+ENV LC_ALL "C.UTF-8"
+ENV PYTHON_VERSION  "3.4"
+
+RUN curl -OL "http://cmake.org/files/v${CMAKE_SHORT_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz" && \
+    tar -x -C /usr --strip-components 1 -f "cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz" && \
+    git clone https://github.com/girder/girder /tmp/girder && \
+    cd /tmp/girder; git checkout tags/v2.3.0 && \
+    cd /tmp/girder ; pip install -r requirements-dev.txt && \ 
+    cp /tmp/girder/CMakeLists.txt /girder/ && \
+    cp -r /tmp/girder/tests /girder/ && ] 
+    pip install gitpython pyaml cis_interface
