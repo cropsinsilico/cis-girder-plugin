@@ -13,6 +13,7 @@ from cis_interface.yamlfile import prep_yaml
 from cis_interface.schema import get_schema
 import os
 import tempfile
+import cherrypy
 
 specDef = {
     "description": "Object representing a CiS model specification.",
@@ -87,6 +88,8 @@ class Spec(Resource):
         self.route('DELETE', (':id',), self.deleteSpec)
         self.route('PUT', ('ingest',), self.ingestSpecs)
         self.route('POST', ('convert',), self.convertSpec)
+        self.route('PUT', ('ingest',), self.ingestSpecs)
+        self.route('POST', (':id', 'issue',), self.submitIssue)
 
     @access.admin
     @autoDescribeRoute(
@@ -212,3 +215,27 @@ class Spec(Resource):
 
         self.setRawResponse()
         return pyaml.dump(cisspec)
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Submit this model to the official catalog')
+        .modelParam('id', model='spec', plugin='cis', level=AccessType.WRITE)
+        .responseClass('spec')
+        .errorResponse('ID was invalid.')
+        .errorResponse('Issue already exists', 303)
+        .errorResponse('Not authorized to submit specs.', 403)
+    )
+    def submitIssue(self, spec):
+        user = self.getCurrentUser()
+
+        if  'issue_url' in spec:
+            cherrypy.response.status = 303
+            raise cherrypy.HTTPRedirect(spec['issue_url'])
+	    
+        cisspec = fbpToCis(spec['content'])
+
+        specyaml = yaml.safe_dump(cisspec, default_flow_style=False)
+
+        """Submit github issue (and eventually PR)."""
+        return self.model('spec', 'cis').submitIssue(spec, specyaml, user)
+
