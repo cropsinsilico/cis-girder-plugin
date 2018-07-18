@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import httmock
 import json
 import six
 from tests import base
@@ -31,7 +32,7 @@ class SpecTestCase(base.TestCase):
             'login': 'joeregular',
             'firstName': 'Joe',
             'lastName': 'Regular',
-            'password': 'secret'
+            'password': 'secret',
         })
         self.admin, self.user = [self.model('user').createUser(**user)
                                  for user in users]
@@ -169,6 +170,27 @@ class SpecTestCase(base.TestCase):
         self.assertStatus(resp, 200)
         self.assertEquals(resp.body, ["model:\n  args: test/test/test.cpp\n  driver: TestModelDriver\n  inputs:\n    - test_in\n  name: TestModel\n  outputs:\n    - test_out\n"])
 
+        with httmock.HTTMock(self.mockPostIssue):
+            self.user['_oauthToken'] = { 'access_token': 'XXX' }
+            spec = self.model('spec', 'cis').submitIssue(model, resp.body,
+                               user=self.user)
+            self.assertEquals(spec['issue_url'],
+                              'https://api.github.com/repos/org/repo/issues/1')
+
+
+    @httmock.urlmatch(netloc='^api\.github\.com$')
+    def mockPostIssue(self, url, request): 
+        headers = {'content-type': 'application/json'}
+        issue = {u'url':
+                 u'https://api.github.com/repos/org/repo/issues/1' }
+        return httmock.response(
+            201, issue, headers, None, 5, request)
+
+
+   
+            
+        
+      
 #model:
 #  args: test/test/test.cpp
 #  driver: TestModelDriver

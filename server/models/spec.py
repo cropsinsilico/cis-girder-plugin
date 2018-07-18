@@ -4,7 +4,12 @@
 
 from girder.constants import AccessType
 from girder.models.model_base import AccessControlledModel
+#from girder.utility import JsonEncoder
+import json
 import datetime
+import requests
+import yaml
+
 
 # Example Spec object:
 # {
@@ -30,7 +35,7 @@ class Spec(AccessControlledModel):
 
         self.exposeFields(level=AccessType.READ, fields={
             '_id', 'name', 'created', 'content', 'description',
-            'creatorId', 'public'})
+            'creatorId', 'issue_url', 'public'})
 
     def validate(self, spec):
         """Validate the model."""
@@ -77,9 +82,7 @@ class Spec(AccessControlledModel):
         else:
             self.setPublic(doc=obj, public=False)
 
-        if creator is not None:
-            self.setUserAccess(obj, user=creator, level=AccessType.ADMIN,
-                               save=False)
+        self.setUserAccess(obj, user=creator, level=AccessType.ADMIN, save=False)
 
         if save:
             obj = self.save(obj)
@@ -95,3 +98,30 @@ class Spec(AccessControlledModel):
         """
         spec['updated'] = datetime.datetime.utcnow()
         return self.save(spec)
+
+
+    def submitIssue(self, spec, yaml, user=None):
+        """Submit issue to github cis-specs repo for this model."""
+        #issuesUrl = 'https://api.github.com/repos/cropsinsilico/cis-specs/issues'
+        issuesUrl = 'https://api.github.com/repos/craig-willis/cis-specs/issues'
+
+        # Authorization: token OAUTH-TOKEN
+	#"_oauthToken": {
+	#	"access_token": "XXXX",
+        authHeader = 'token %s' % user['_oauthToken']['access_token']
+        print(authHeader)
+
+        # Create our issue
+        issue = {'title': 'New model request: %s' % spec['content']['name'],
+                 'body': '```%s```' % yaml }
+        print(json.dumps(issue))
+        #json=json.dumps(issue, cls=JsonEncoder)
+        r = requests.post(issuesUrl, json=issue, headers={'Authorization': authHeader})
+        if r.status_code == requests.codes.created:
+            body = r.json()
+            print(body)
+            spec['issue_url'] = body['url']
+            return self.save(spec)
+        else:
+            r.raise_for_status()
+
