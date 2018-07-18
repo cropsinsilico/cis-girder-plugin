@@ -107,7 +107,7 @@ class Spec(AccessControlledModel):
 
         # Authorization: token OAUTH-TOKEN
 	#"_oauthToken": {
-	#	"access_token": "377e64390aca1d1e13334893db43159c495f2bda",
+	#	"access_token": "XXXX",
         authHeader = 'token %s' % user['_oauthToken']['access_token']
         print(authHeader)
 
