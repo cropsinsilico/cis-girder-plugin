@@ -1,7 +1,7 @@
 """Defines the graph API."""
 from girder.api import access
 from girder.api.docs import addModel
-from girder.api.rest import Resource, filtermodel
+from girder.api.rest import Resource, filtermodel, RestException
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import SortDir, AccessType
 from ..models.graph import Graph as GraphModel
@@ -161,6 +161,6 @@ class Graph(Resource):
         if 'public' in graph and graph['public'] and not user['admin']:
             raise RestException('Not authorized to create public graphs', 403)
         elif 'public' in graph:
-            grapObj['public'] = graph['public']
+            graphObj['public'] = graph['public']
 
         return self.model('graph', 'cis').updateGraph(graphObj)
