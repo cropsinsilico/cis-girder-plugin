@@ -6,7 +6,7 @@ from girder.api.rest import Resource, filtermodel, RestException
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import SortDir, AccessType
 from ..models.spec import Spec as SpecModel
-from ..utils import ingest, fbpToCis
+from ..utils import ingest, uiToCis
 import pyaml
 import yaml
 from cis_interface.yamlfile import prep_yaml
@@ -199,7 +199,7 @@ class Spec(Resource):
     )
     def convertSpec(self, spec):
         """Convert spec."""
-        cisspec = fbpToCis(spec['content'])
+        cisspec = uiToCis(spec['content'])
 
         # Write to temp file and validate
         tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
@@ -233,7 +233,7 @@ class Spec(Resource):
             cherrypy.response.status = 303
             raise cherrypy.HTTPRedirect(spec['issue_url'])
 	    
-        cisspec = fbpToCis(spec['content'])
+        cisspec = uiToCis(spec['content'])
 
         specyaml = yaml.safe_dump(cisspec, default_flow_style=False)
 

@@ -77,6 +77,7 @@ class Graph(Resource):
         self.route('POST', (), self.createGraph)
         self.route('PUT', (':id',), self.updateGraph)
         self.route('DELETE', (':id',), self.deleteGraph)
+        self.route('POST', ('convert',), self.convertGraph)
 
     @access.public
     @filtermodel(model='graph', plugin='cis')
@@ -164,3 +165,31 @@ class Graph(Resource):
             graphObj['public'] = graph['public']
 
         return self.model('graph', 'cis').updateGraph(graphObj)
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Convert a graph from FBP to cisrun format.')
+        .jsonParam('spec', 'Name and attributes of the spec.',
+                   paramType='body')
+        .errorResponse()
+        .errorResponse('Not authorized to convert specs.', 403)
+    )
+    def convertSpec(self, spec):
+        """Convert spec."""
+        cisspec = fbpToCis(spec['content'])
+
+        # Write to temp file and validate
+        tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
+                                              delete=False)
+        yaml.safe_dump(cisspec, tmpfile, default_flow_style=False)
+        yml_prep = prep_yaml(tmpfile)
+        os.remove(tmpfile.name)
+
+        v = get_schema().validator
+        yml_norm = v.normalized(yml_prep)
+        if not v.validate(yml_norm):
+            print(v.errors)
+            raise RestException('Invalid graph %s', 400, v.errors)
+
+        self.setRawResponse()
+        return pyaml.dump(cisspec)
