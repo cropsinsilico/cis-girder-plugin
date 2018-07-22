@@ -16,41 +16,41 @@ def cloneRepo(url, path, branch='master'):
     return repo
 
 
-def cisToFBP(cismodel):
-    """Convert from cisrun to flow-based-protocol (FBP)."""
-    fbpmodel = {}
+def cisToUI(cismodel):
+    """Convert from cisrun to UI format."""
+    uimodel = {}
     for key in cismodel.keys():
         if key == 'name':
-            fbpmodel['label'] = cismodel['name']
-            fbpmodel['name'] = cismodel['name'].lower()
+            uimodel['label'] = cismodel['name']
+            uimodel['name'] = cismodel['name'].lower()
         elif key == 'inputs':
-            fbpmodel['inports'] = convertInputsToPorts(cismodel['inputs'])
+            uimodel['inports'] = convertInputsToPorts(cismodel['inputs'])
         elif key == 'outputs':
-            fbpmodel['outports'] = convertInputsToPorts(cismodel['outputs'])
+            uimodel['outports'] = convertInputsToPorts(cismodel['outputs'])
         else:
-            fbpmodel[key] = cismodel[key]
-    return {"content": fbpmodel}
+            uimodel[key] = cismodel[key]
+    return {"content": uimodel}
 
 
-def fbpToCis(fbpmodel):
-    """Convert dict from fbp format to cisrun format."""
+def uiToCis(uimodel):
+    """Convert dict from ui format to cisrun format."""
     cismodel = {}
-    for key in fbpmodel.keys():
+    for key in uimodel.keys():
         if key == 'name':
-            cismodel['name'] = fbpmodel['label']
+            cismodel['name'] = uimodel['label']
         elif key == 'label' or key == 'icon' or key == 'description':
             pass
         elif key == 'inports':
-            cismodel['inputs'] = convertPortsToPuts(fbpmodel['inports'])
+            cismodel['inputs'] = convertPortsToPuts(uimodel['inports'])
         elif key == 'outports':
-            cismodel['outputs'] = convertPortsToPuts(fbpmodel['outports'])
+            cismodel['outputs'] = convertPortsToPuts(uimodel['outports'])
         else:
-            cismodel[key] = fbpmodel[key]
+            cismodel[key] = uimodel[key]
     return {"model": cismodel}
 
 
 def convertPortsToPuts(ports):
-    """Convert FBP inports/outports to cisrun inputs/output."""
+    """Convert UI inports/outports to cisrun inputs/output."""
     puts = []
     for port in ports:
         puts.append(port['name'])
@@ -58,7 +58,7 @@ def convertPortsToPuts(ports):
 
 
 def convertInputsToPorts(inputs):
-    """Convert cisrun inputs/output to FBP inports/outports."""
+    """Convert cisrun inputs/output to UI inports/outports."""
     ports = []
     for input in inputs:
         port = {}
@@ -90,11 +90,48 @@ def loadSpecs(repo, path):
                 model = yaml.load(stream)
 
             # Convert to format expected by UI
-            converted = cisToFBP(model['model'])
+            converted = cisToUI(model['model'])
             converted['hash'] = str(repo.tree()[relpath])
 
             specs[converted['content']['name']] = converted
     return specs
+
+
+def fbpToCis(fbp):
+    """ Given a flow-based-protocol graph, return in CIS format."""
+    inports = {}
+    outports = {}
+    models = {}
+    for key,process in data['processes'].items():
+        component =  process['component']
+        if component == 'inport' or component == 'outport':
+            port = {}
+            port['name'] = process['metadata']['name']
+            port['type'] = process['metadata']['type']
+            if component == 'inport':
+               port['method']  = process['metadata']['read_meth']
+               inports[key] = port
+            else:
+               outports[key] = port
+        else:
+            models[key] = component
+    
+    conns = []
+    for connection in data['connections']:
+        srckey = connection['src']['process']
+        tgtkey = connection['tgt']['process']
+    
+        conn = {}
+        if srckey in inports:
+           conn['input'] = inports[srckey]['name']
+           conn['filetype'] = inports[srckey]['method']
+           conn['output'] = connection['tgt']['port']
+        elif tgtkey in outports:
+           conn['input'] = connection['src']['port']
+           conn['output'] = outports[tgtkey]['name']
+        conns.append(conn)
+    
+    return { "models": models, "connections": conns }
 
 
 def ingest():
