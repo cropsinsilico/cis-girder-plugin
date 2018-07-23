@@ -1,0 +1,236 @@
+{
+  "caseSensitive": false,
+  "properties": {},
+  "inports": {},
+  "outports": {},
+  "groups": [],
+  "processes": {
+    "1pdw": {
+      "component": "canopymodel",
+      "metadata": {
+        "height": 72,
+        "label": "CanopyModel",
+        "width": 72,
+        "x": 504,
+        "y": 360
+      }
+    },
+    "ofr": {
+      "component": "photosynthesismodel",
+      "metadata": {
+        "height": 72,
+        "label": "PhotosynthesisModel",
+        "width": 72,
+        "x": 828,
+        "y": 432
+      }
+    },
+    "vyz": {
+      "component": "growthmodelpy",
+      "metadata": {
+        "height": 72,
+        "label": "GrowthModelPy",
+        "width": 72,
+        "x": 288,
+        "y": 432
+      }
+    },
+    "frr": {
+      "component": "lightmodel",
+      "metadata": {
+        "height": 72,
+        "label": "LightModel",
+        "width": 72,
+        "x": 648,
+        "y": 288
+      }
+    },
+    "24w2": {
+      "component": "inport",
+      "metadata": {
+        "height": 72,
+        "label": "plant_layout",
+        "name": "hackathon2018/Input/plant_layout.txt",
+        "read_meth": "table",
+        "type": "File",
+        "width": 72,
+        "x": 288,
+        "y": 216
+      }
+    },
+    "yqh": {
+      "component": "inport",
+      "metadata": {
+        "height": 72,
+        "label": "init_canopy_structure",
+        "name": "hackathon2018/Input/canopy_structure.txt",
+        "read_meth": "table_array",
+        "type": "File",
+        "width": 72,
+        "x": 288,
+        "y": 324
+      }
+    },
+    "13z4": {
+      "component": "inport",
+      "metadata": {
+        "height": 72,
+        "label": "ambient_light",
+        "name": "hackathon2018/Input/ambient_light.txt",
+        "read_meth": "table",
+        "type": "File",
+        "width": 72,
+        "x": 504,
+        "y": 216
+      }
+    },
+    "1suu": {
+      "component": "inport",
+      "metadata": {
+        "height": 72,
+        "label": "temperature",
+        "name": "hackathon2018/Input/temperature.txt",
+        "read_meth": "table",
+        "type": "File",
+        "width": 72,
+        "x": 648,
+        "y": 432
+      }
+    },
+    "6v9": {
+      "component": "inport",
+      "metadata": {
+        "height": 72,
+        "label": "co2",
+        "name": "hackathon2018/Input/co2.txt",
+        "read_meth": "table",
+        "type": "File",
+        "width": 72,
+        "x": 648,
+        "y": 576
+      }
+    },
+    "1zqp": {
+      "component": "inport",
+      "metadata": {
+        "height": 72,
+        "label": "time",
+        "name": "hackathon2018/Input/time.txt",
+        "read_meth": "table",
+        "type": "File",
+        "width": 72,
+        "x": 288,
+        "y": 576
+      }
+    }
+  },
+  "connections": [
+    {
+      "src": {
+        "process": "vyz",
+        "port": "growth_rate"
+      },
+      "tgt": {
+        "process": "1pdw",
+        "port": "growth_rate"
+      }
+    },
+    {
+      "src": {
+        "process": "frr",
+        "port": "light_intensity"
+      },
+      "tgt": {
+        "process": "ofr",
+        "port": "light_intensity"
+      }
+    },
+    {
+      "src": {
+        "process": "1pdw",
+        "port": "canopy_structure"
+      },
+      "tgt": {
+        "process": "frr",
+        "port": "canopy_structure"
+      },
+      "metadata": {
+        "route": null,
+        "field_names": "x1,y1,z1,x2,y2,z2,x3,y3,z3"
+      }
+    },
+    {
+      "src": {
+        "process": "24w2",
+        "port": "value"
+      },
+      "tgt": {
+        "process": "1pdw",
+        "port": "plant_layout"
+      }
+    },
+    {
+      "src": {
+        "process": "yqh",
+        "port": "value"
+      },
+      "tgt": {
+        "process": "1pdw",
+        "port": "init_canopy_structure"
+      }
+    },
+    {
+      "src": {
+        "process": "13z4",
+        "port": "value"
+      },
+      "tgt": {
+        "process": "frr",
+        "port": "ambient_light"
+      }
+    },
+    {
+      "src": {
+        "process": "1suu",
+        "port": "value"
+      },
+      "tgt": {
+        "process": "ofr",
+        "port": "temperature"
+      }
+    },
+    {
+      "src": {
+        "process": "6v9",
+        "port": "value"
+      },
+      "tgt": {
+        "process": "ofr",
+        "port": "co2"
+      }
+    },
+    {
+      "src": {
+        "process": "1zqp",
+        "port": "value"
+      },
+      "tgt": {
+        "process": "1pdw",
+        "port": "time"
+      }
+    },
+    {
+      "src": {
+        "process": "ofr",
+        "port": "photosynthesis_rate"
+      },
+      "tgt": {
+        "process": "vyz",
+        "port": "photosynthesis_rate"
+      },
+      "metadata": {
+        "route": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+model:
+  name: PhotosynthesisModel
+  language: python
+  args: hackathon2018/src/photosynthesis.py
+  inputs:
+    - light_intensity
+    - temperature
+    - co2
+  outputs:
+    - photosynthesis_rate
+  icon: exchange 
+  description: Photosynthesis Model

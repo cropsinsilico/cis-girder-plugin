@@ -1,0 +1,13 @@
+model:
+  name: LightModel
+  language: c
+  args:
+    - hackathon2018/src/light.c
+    - -lm
+  inputs:
+    - ambient_light
+    - canopy_structure
+  outputs:
+    - light_intensity
+  icon: lightbulb-o
+  description: Light Model
