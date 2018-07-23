@@ -1,10 +1,17 @@
 """Defines the graph API."""
 from girder.api import access
 from girder.api.docs import addModel
-from girder.api.rest import Resource, filtermodel
+from girder.api.rest import Resource, filtermodel, RestException
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import SortDir, AccessType
 from ..models.graph import Graph as GraphModel
+from ..utils import fbpToCis
+import tempfile
+import yaml
+import pyaml
+import os
+from cis_interface.yamlfile import prep_yaml
+from cis_interface.schema import get_schema
 
 graphDef = {
     "description": "Object representing a Crops in Silico model graph.",
@@ -77,6 +84,7 @@ class Graph(Resource):
         self.route('POST', (), self.createGraph)
         self.route('PUT', (':id',), self.updateGraph)
         self.route('DELETE', (':id',), self.deleteGraph)
+        self.route('POST', ('convert',), self.convertGraph)
 
     @access.public
     @filtermodel(model='graph', plugin='cis')
@@ -161,6 +169,34 @@ class Graph(Resource):
         if 'public' in graph and graph['public'] and not user['admin']:
             raise RestException('Not authorized to create public graphs', 403)
         elif 'public' in graph:
-            grapObj['public'] = graph['public']
+            graphObj['public'] = graph['public']
 
         return self.model('graph', 'cis').updateGraph(graphObj)
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Convert a graph from FBP to cisrun format.')
+        .jsonParam('graph', 'Name and attributes of the spec.',
+                   paramType='body')
+        .errorResponse()
+        .errorResponse('Not authorized to convert specs.', 403)
+    )
+    def convertGraph(self, graph):
+        """Convert graph."""
+        cisgraph = fbpToCis(graph['content'])
+
+        # Write to temp file and validate
+        tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
+                                              delete=False)
+        yaml.safe_dump(cisgraph, tmpfile, default_flow_style=False)
+        yml_prep = prep_yaml(tmpfile)
+        os.remove(tmpfile.name)
+
+        v = get_schema().validator
+        yml_norm = v.normalized(yml_prep)
+        if not v.validate(yml_norm):
+            print(v.errors)
+            raise RestException('Invalid graph %s', 400, v.errors)
+
+        self.setRawResponse()
+        return pyaml.dump(cisgraph)
