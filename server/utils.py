@@ -91,13 +91,14 @@ def loadSpecs(repo, path):
 
             # Convert to format expected by UI
             converted = cisToUI(model['model'])
-            converted['hash'] = str(repo.tree()[relpath])
+            if repo is not None:
+                converted['hash'] = str(repo.tree()[relpath])
 
             specs[converted['content']['name']] = converted
     return specs
 
 
-def fbpToCis(fbp):
+def fbpToCis(data):
     """ Given a flow-based-protocol graph, return in CIS format."""
     inports = {}
     outports = {}
@@ -114,7 +115,8 @@ def fbpToCis(fbp):
             else:
                outports[key] = port
         else:
-            models[key] = component
+            spec = SpecModel().findOne({'content.name': component})
+            models[key] = uiToCis(spec['content'])['model']
     
     conns = []
     for connection in data['connections']:
@@ -122,6 +124,7 @@ def fbpToCis(fbp):
         tgtkey = connection['tgt']['process']
     
         conn = {}
+        is_model = False
         if srckey in inports:
            conn['input'] = inports[srckey]['name']
            conn['filetype'] = inports[srckey]['method']
@@ -129,9 +132,22 @@ def fbpToCis(fbp):
         elif tgtkey in outports:
            conn['input'] = connection['src']['port']
            conn['output'] = outports[tgtkey]['name']
+        else:
+           conn['input'] = connection['src']['port']
+           conn['output'] = connection['tgt']['port']
+
+        if 'metadata' in connection and 'field_names' in connection['metadata']:
+           conn['field_names'] = connection['metadata']['field_names']
+        elif srckey in models and tgtkey in models:
+           conn['field_names'] = connection['src']['port']
+
+        if 'filetype' in conn and conn['filetype'] == 'table_array':
+           conn['filetype'] = 'table'
+           conn['as_array'] = 'True'
+
         conns.append(conn)
-    
-    return { "models": models, "connections": conns }
+
+    return { "models": models.values(), "connections": conns }
 
 
 def ingest():

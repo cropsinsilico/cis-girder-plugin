@@ -180,7 +180,8 @@ class Spec(Resource):
         user = self.getCurrentUser()
 
         specObj['content'] = spec['content']
-        specObj['issue_url'] = spec['issue_url']
+        if 'issue_url' in spec:
+            specObj['issue_url'] = spec['issue_url']
 
         if 'public' in spec and spec['public'] and not user['admin']:
             raise RestException('Not authorized to create public specs', 403)

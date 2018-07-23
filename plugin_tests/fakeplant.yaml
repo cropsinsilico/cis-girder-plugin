@@ -1,0 +1,69 @@
+models:
+  - name: CanopyModel
+    language: c++
+    args: hackathon2018/src/canopy.cpp
+    inputs:
+      - plant_layout
+      - init_canopy_structure
+      - growth_rate
+      - time
+    outputs:
+      - canopy_structure
+  - name: GrowthModelPy
+    language: python
+    args: hackathon2018/src/growth.py
+    inputs:
+      - photosynthesis_rate
+    outputs:
+      - growth_rate
+  - name: LightModel
+    language: c
+    args:
+      - hackathon2018/src/light.c
+      - -lm
+    inputs:
+      - ambient_light
+      - canopy_structure
+    outputs:
+      - light_intensity
+  - name: PhotosynthesisModel
+    language: python
+    args: hackathon2018/src/photosynthesis.py
+    inputs:
+      - light_intensity
+      - temperature
+      - co2
+    outputs:
+      - photosynthesis_rate
+connections:
+  - input: hackathon2018/Input/plant_layout.txt
+    output: plant_layout
+    filetype: table
+  - input: hackathon2018/Input/canopy_structure.txt
+    output: init_canopy_structure
+    filetype: table
+    as_array: True
+  - input: hackathon2018/Input/ambient_light.txt
+    output: ambient_light
+    filetype: table
+  - input: hackathon2018/Input/temperature.txt
+    output: temperature
+    filetype: table
+  - input: hackathon2018/Input/co2.txt
+    output: co2
+    filetype: table
+  - input: hackathon2018/Input/time.txt
+    output: time
+    filetype: table
+  - input: growth_rate
+    output: growth_rate
+    field_names: growth_rate
+  - input: photosynthesis_rate
+    output: photosynthesis_rate
+    field_names: photosynthesis_rate
+  - input: canopy_structure
+    output: canopy_structure
+    field_names: x1,y1,z1,x2,y2,z2,x3,y3,z3
+  - input: light_intensity
+    output: light_intensity
+    field_names: light_intensity

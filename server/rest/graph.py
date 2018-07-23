@@ -5,6 +5,13 @@ from girder.api.rest import Resource, filtermodel, RestException
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import SortDir, AccessType
 from ..models.graph import Graph as GraphModel
+from ..utils import fbpToCis
+import tempfile
+import yaml
+import pyaml
+import os
+from cis_interface.yamlfile import prep_yaml
+from cis_interface.schema import get_schema
 
 graphDef = {
     "description": "Object representing a Crops in Silico model graph.",
@@ -169,19 +176,19 @@ class Graph(Resource):
     @access.user
     @autoDescribeRoute(
         Description('Convert a graph from FBP to cisrun format.')
-        .jsonParam('spec', 'Name and attributes of the spec.',
+        .jsonParam('graph', 'Name and attributes of the spec.',
                    paramType='body')
         .errorResponse()
         .errorResponse('Not authorized to convert specs.', 403)
     )
-    def convertSpec(self, spec):
-        """Convert spec."""
-        cisspec = fbpToCis(spec['content'])
+    def convertGraph(self, graph):
+        """Convert graph."""
+        cisgraph = fbpToCis(graph['content'])
 
         # Write to temp file and validate
         tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
                                               delete=False)
-        yaml.safe_dump(cisspec, tmpfile, default_flow_style=False)
+        yaml.safe_dump(cisgraph, tmpfile, default_flow_style=False)
         yml_prep = prep_yaml(tmpfile)
         os.remove(tmpfile.name)
 
@@ -192,4 +199,4 @@ class Graph(Resource):
             raise RestException('Invalid graph %s', 400, v.errors)
 
         self.setRawResponse()
-        return pyaml.dump(cisspec)
+        return pyaml.dump(cisgraph)
