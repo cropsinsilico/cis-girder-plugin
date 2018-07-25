@@ -173,7 +173,7 @@ class Graph(Resource):
 
         return self.model('graph', 'cis').updateGraph(graphObj)
 
-    @access.user
+    @access.public
     @autoDescribeRoute(
         Description('Convert a graph from FBP to cisrun format.')
         .jsonParam('graph', 'Name and attributes of the spec.',
