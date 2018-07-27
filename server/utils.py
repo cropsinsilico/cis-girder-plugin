@@ -131,6 +131,7 @@ def fbpToCis(data):
            conn['output'] = connection['tgt']['port']
         elif tgtkey in outports:
            conn['input'] = connection['src']['port']
+           conn['filetype'] = outpors[tgtkey]['method']
            conn['output'] = outports[tgtkey]['name']
         else:
            conn['input'] = connection['src']['port']
