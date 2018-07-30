@@ -224,15 +224,13 @@ class Spec(Resource):
         .modelParam('id', model='spec', plugin='cis', level=AccessType.WRITE)
         .responseClass('spec')
         .errorResponse('ID was invalid.')
-        .errorResponse('Issue already exists', 303)
         .errorResponse('Not authorized to submit specs.', 403)
     )
     def submitIssue(self, spec):
         user = self.getCurrentUser()
 
         if  'issue_url' in spec:
-            cherrypy.response.status = 303
-            raise cherrypy.HTTPRedirect(spec['issue_url'])
+            return { "issue_url": spec['issue_url'] }
 	    
         cisspec = uiToCis(spec['content'])
 
