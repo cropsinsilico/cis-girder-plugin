@@ -166,15 +166,14 @@ def ingest():
 
     specs = {}
     # Delete specs that are not in github
-    for spec in SpecModel().find({}):
-        if 'public' not in spec or not spec['public']:
-            pass
-
-        name = spec['content']['name']
-        specs[name] = spec
-        if name not in gitspecs:
-            SpecModel().remove(spec)
-            print("Spec %s removed from github, deleting" % name)
+    #for spec in SpecModel().find({}):
+    #    if 'public' not in spec or not spec['public']:
+    #        pass
+    #    name = spec['content']['name']
+    #    specs[name] = spec
+    #    if name not in gitspecs:
+    #        SpecModel().remove(spec)
+    #        print("Spec %s removed from github, deleting" % name)
 
     for key, gitspec in gitspecs.items():
         name = gitspec['content']['name']
