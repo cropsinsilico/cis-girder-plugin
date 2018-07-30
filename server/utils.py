@@ -113,6 +113,7 @@ def fbpToCis(data):
                port['method']  = process['metadata']['read_meth']
                inports[key] = port
             else:
+               port['method']  = process['metadata']['write_meth']
                outports[key] = port
         else:
             spec = SpecModel().findOne({'content.name': component})
