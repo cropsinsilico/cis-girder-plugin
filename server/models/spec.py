@@ -102,8 +102,7 @@ class Spec(AccessControlledModel):
 
     def submitIssue(self, spec, yaml, user=None):
         """Submit issue to github cis-specs repo for this model."""
-        #issuesUrl = 'https://api.github.com/repos/cropsinsilico/cis-specs/issues'
-        issuesUrl = 'https://api.github.com/repos/craig-willis/cis-specs/issues'
+        issuesUrl = 'https://api.github.com/repos/cropsinsilico/cis-specs/issues'
 
         # Authorization: token OAUTH-TOKEN
 	#"_oauthToken": {
