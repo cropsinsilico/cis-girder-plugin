@@ -224,18 +224,22 @@ class Spec(Resource):
         .modelParam('id', model='spec', plugin='cis', level=AccessType.WRITE)
         .responseClass('spec')
         .errorResponse('ID was invalid.')
+        .errorResponse('Issue already exists', 200)
+        .errorResponse('Issue was created', 201)
         .errorResponse('Not authorized to submit specs.', 403)
     )
     def submitIssue(self, spec):
         user = self.getCurrentUser()
 
-        if  'issue_url' in spec:
+        if 'issue_url' in spec:
+            cherrypy.response.status = 200
             return { "issue_url": spec['issue_url'] }
 	    
         cisspec = uiToCis(spec['content'])
 
         specyaml = yaml.safe_dump(cisspec, default_flow_style=False)
 
+        cherrypy.response.status = 201
         """Submit github issue (and eventually PR)."""
         return self.model('spec', 'cis').submitIssue(spec, specyaml, user)
 
