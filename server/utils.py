@@ -3,9 +3,76 @@
 from git import Repo
 import os
 import yaml
+import urllib
 import shutil
 from models.spec import Spec as SpecModel
+from girder.plugins.jobs.models.job import Job as JobModel
 
+import datetime
+import sys
+
+from kubernetes_executor import KubernetesJob
+
+def jupyterUserEncode(username):
+    return urllib.quote_plus(username).replace('.', '%2e').replace('-', '%2d').replace('%', '-')
+    
+def execGraph(yaml_graph, username):
+    # Write YAML graph to a file
+    #yaml_path = "graph.yaml";f = open(yaml_path,"w");f.write(yaml_graph);f.close()
+    
+    # Give our job a unique name
+    job_name = "test-" + str(datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
+    job_type = 'k8s.io/cis_interface'
+    
+    # Specify the Docker image and command to run
+    docker_image = "bodom0015/cis_interface:0.6.1"
+    command = "cd /pvc && echo '" + str(yaml_graph) + "' > graph.yml && cp -R /hackathon2018 /pvc/ && echo Running graph in $(pwd): && cisrun graph.yml"
+    
+    # Encode our username with Jupyter's special homebrew recipe
+    username = jupyterUserEncode(username)
+    
+    # Job must run in same namespace as the PVC
+    namespace = "hub"
+    
+    # Specify some arbitrary limits
+    timeout = 120
+    num_cpus = 1
+    max_ram_mb = 512
+        
+    # Create a record in the Job database
+    jobModel = JobModel()
+    job_model = jobModel.createJob(job_name, job_type, async=True, kwargs={
+        'name': job_name,
+        'namespace': namespace,
+        'command': command,
+        'image': docker_image
+    })
+    
+    jobModel.save(job_model)
+    
+    # Create and run the job
+    k8s_job = KubernetesJob(username, job_name, namespace, timeout, command, docker_image, num_cpus, max_ram_mb)
+    if not k8s_job.is_running():
+        jobModel.scheduleJob(job_model)
+        k8s_job.submit()
+    
+    return job_name
+    
+def getLogs(job_name, job_type, username): 
+    # Create and run the job
+    timeout = 120
+    num_cpus = 1
+    max_ram_mb = 512
+    job = KubernetesJob(username, job_name, "hub", timeout, None, None, num_cpus, max_ram_mb)
+    #if not job.is_running():
+        #return 'Job is not running'
+    #elif not job.is_done():
+        #return 'Job is still running'
+    #elif job.is_failed():
+        #return 'Job is failed'
+    #else:
+        #return job.get_error_message() 
+    return job.get_error_message()
 
 def cloneRepo(url, path, branch='master'):
     """Use gitpython to clone the specified repo/branch."""
