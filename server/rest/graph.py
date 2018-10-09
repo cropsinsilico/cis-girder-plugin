@@ -215,8 +215,8 @@ class Graph(Resource):
         """Execute graph."""
         cisgraph = fbpToCis(graph['content'])
         
-        # TODO: How to detect username?
-        username = "bodom0015"
+        user = self.getCurrentUser()
+        username = user['login']
 
         # Write to temp file and validate
         tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
@@ -248,7 +248,8 @@ class Graph(Resource):
         """Get job logs from executing this graph."""
         
         # TODO: How to detect username?
-        username = "bodom0015"
+        user = self.getCurrentUser()
+        username = user['login']
         job_name = name
         job_type = 'k8s.io/cis_interface'
         

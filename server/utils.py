@@ -20,13 +20,16 @@ def execGraph(yaml_graph, username):
     # Write YAML graph to a file
     #yaml_path = "graph.yaml";f = open(yaml_path,"w");f.write(yaml_graph);f.close()
     
+    # TODO: How do we cache/lookup this execution again later? Hash the command?
+    
     # Give our job a unique name
-    job_name = "test-" + str(datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
+    job_name = username + "-" + str(datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
     job_type = 'k8s.io/cis_interface'
     
-    # Specify the Docker image and command to run
+    # Specify the Docker image and command(s) to run
     docker_image = "bodom0015/cis_interface:0.6.1"
-    command = "cd /pvc && echo '" + str(yaml_graph) + "' > graph.yml && cp -R /hackathon2018 /pvc/ && echo Running graph in $(pwd): && cisrun graph.yml"
+    init_command = "mkdir -p /pvc/" + job_name + " && cp -R /pvc/hackathon2018 /pvc/" + job_name
+    command = "echo '" + str(yaml_graph) + "' > graph.yml && cp -R /pvc/hackathon2018 /pvc/" + job_name + " && echo Running in $(pwd): && cisrun graph.yml"
     
     # Encode our username with Jupyter's special homebrew recipe
     username = jupyterUserEncode(username)
@@ -43,15 +46,21 @@ def execGraph(yaml_graph, username):
     jobModel = JobModel()
     job_model = jobModel.createJob(job_name, job_type, async=True, kwargs={
         'name': job_name,
+        'type': job_type,
         'namespace': namespace,
+        'username': username,
+        'init_command': init_command,
         'command': command,
-        'image': docker_image
+        'image': docker_image,
+        'timeout': timeout,
+        'num_cpus': num_cpus,
+        'max_ram_mb': max_ram_mb,
     })
     
     jobModel.save(job_model)
     
     # Create and run the job
-    k8s_job = KubernetesJob(username, job_name, namespace, timeout, command, docker_image, num_cpus, max_ram_mb)
+    k8s_job = KubernetesJob(username, job_name, namespace, timeout, init_command, command, docker_image, num_cpus, max_ram_mb)
     if not k8s_job.is_running():
         jobModel.scheduleJob(job_model)
         k8s_job.submit()
@@ -63,7 +72,7 @@ def getLogs(job_name, job_type, username):
     timeout = 120
     num_cpus = 1
     max_ram_mb = 512
-    job = KubernetesJob(username, job_name, "hub", timeout, None, None, num_cpus, max_ram_mb)
+    job = KubernetesJob(username, job_name, "hub", timeout, None, None, None, num_cpus, max_ram_mb)
     #if not job.is_running():
         #return 'Job is not running'
     #elif not job.is_done():

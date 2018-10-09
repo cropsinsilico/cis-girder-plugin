@@ -1,3 +1,9 @@
+# This code was created for use in the KnowEnG Platform under the MIT License.
+# LICENSE: https://github.com/KnowEnG/platform/blob/master/LICENSE
+#
+# It has been modified slightly and repurposed for use in this project.
+#
+#
 """This module defines constants and a base class for jobs that run 
    remotely using Kubernetes.
 
@@ -51,12 +57,13 @@ class KubernetesJob(object):
     kubernetes_apiuri = os.getenv('KUBERNETES_SERVICE_HOST', '10.0.0.1') + ':' + \
         str(os.getenv('KUBERNETES_SERVICE_PORT', 443))
       
-    def __init__(self, username, job_name, namespace, timeout, command, docker_image, num_cpus, max_ram_mb):
+    def __init__(self, username, job_name, namespace, timeout, init_command, command, docker_image, num_cpus, max_ram_mb):
         """Initializes self.
 
         Args:
             username (str): The username of the owner of this job.
             job_name (str): A name to identify the job in Kubernetes.
+            init_command (str): The full command to run in the initContainer.
             command (str): The full command to run in the container.
             timeout (int): The maximum execution time in seconds.
             docker_image (str): The docker image name for Kubernetes to run.
@@ -77,6 +84,7 @@ class KubernetesJob(object):
         self.num_cpus = num_cpus
         self.max_ram_mb = max_ram_mb
         self.username = username
+        self.init_command = init_command
         self.command = command
 
         # CPU is measured in microns (m) or integers, where 1000m = 1 CPU
@@ -150,12 +158,13 @@ class KubernetesJob(object):
                                 "command": ["bash"],
                                 "args": ["-c", self.command],
                                 "env": [ 
+                                    # Legacy environment vars.. these can probably be removed
                                     { "name": "RABBIT_NAMESPACE", "value": "cis" },
                                     { "name": "RABBIT_HOST", "value": "localhost" },
                                     { "name": "RABBIT_PORT", "value": "5672" },
                                     { "name": "RABBIT_USER", "value": "guest" },
                                     { "name": "RABBIT_PASS", "value": "guest" },
-                                    { "name": "RABBIT_VHOST", "value": "%2f" },
+                                    { "name": "RABBIT_VHOST", "value": "%2f" }
                                 ],
                                 "resources": {
                                     "requests": {
@@ -188,6 +197,22 @@ class KubernetesJob(object):
                 }
             }
         }
+        
+        if self.init_command is not None:
+            payload['spec']['template']['spec']['initContainers'] = [
+                {
+                    "name": "init-copy-source",
+                    "image": "alpine",
+                    "command": [ "bin/sh" ],
+                    "args": [ "-c", self.init_command ],
+                    "volumeMounts": [
+                        {
+                            "name": "userdata",
+                            "mountPath": "/pvc",
+                        }
+                    ]
+                }
+            ]
 
         # If this is production, adjust payload before submitting
         if RUNLEVEL == 'production':
