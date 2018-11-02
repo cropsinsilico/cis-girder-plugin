@@ -28,8 +28,8 @@ def execGraph(yaml_graph, username):
     
     # Specify the Docker image and command(s) to run
     docker_image = "bodom0015/cis_interface:0.6.1"
-    init_command = "mkdir -p /pvc/" + job_name + " && cp -R /pvc/hackathon2018 /pvc/" + job_name
-    command = "echo '" + str(yaml_graph) + "' > graph.yml && cp -R /pvc/hackathon2018 /pvc/" + job_name + " && echo Running in $(pwd): && cisrun graph.yml"
+    init_command = "mkdir -p /pvc/" + job_name + " && ls -al && cp -R /pvc/models/* /pvc/" + job_name
+    command = "echo '" + str(yaml_graph) + "' > graph.yml && echo Running in $(pwd): && ls -al && cisrun graph.yml"
     
     # Encode our username with Jupyter's special homebrew recipe
     username = jupyterUserEncode(username)
