@@ -176,11 +176,11 @@ def loadSpecs(repo, path):
 def get_label_or_name(metadata):
     return metadata.get('label', metadata.get('name', None))
     
-def get_process_by_name(name):
+def get_process_by_name(processes, name):
     ret = None
-    for node in processes:
-        if node['name'] == name:
-            ret = node
+    for key,process in processes:
+        if process['metadata']['name'] == name:
+            ret = process
             break
     return ret
 
@@ -213,14 +213,14 @@ def fbpToCis(data):
         conn = {}
         is_model = False
         if srckey in inports:
-           in_port = get_process_by_name(srckey)
+           in_port = get_process_by_name(data['processes'], srckey)
            conn['input'] = get_label_or_name(in_port['metadata'])
            conn['filetype'] = inports[srckey]['method']
            conn['output'] = connection['tgt']['port']
         elif tgtkey in outports:
            conn['input'] = connection['src']['port']
            conn['filetype'] = outports[tgtkey]['method']
-           out_port = get_process_by_name(tgtkey)
+           out_port = get_process_by_name(data['processes'], tgtkey)
            conn['output'] = get_label_or_name(in_port['metadata'])
         else:
            conn['input'] = connection['src']['port']
