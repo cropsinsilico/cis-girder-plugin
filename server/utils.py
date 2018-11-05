@@ -178,7 +178,7 @@ def get_label_or_name(metadata):
     
 def get_process_by_name(processes, name):
     ret = None
-    for key,process in processes:
+    for key,process in processes.items():
         if process['metadata']['name'] == name:
             ret = process
             break
