@@ -173,6 +173,16 @@ def loadSpecs(repo, path):
             specs[converted['content']['name']] = converted
     return specs
 
+def get_label_or_name(metadata):
+    return metadata.get('label', metadata.get('name', None))
+    
+def get_process_by_name(name):
+    ret = None
+    for node in processes:
+        if node['name'] == name:
+            ret = node
+            break
+    return ret
 
 def fbpToCis(data):
     """ Given a flow-based-protocol graph, return in CIS format."""
@@ -183,7 +193,7 @@ def fbpToCis(data):
         component =  process['component']
         if component == 'inport' or component == 'outport':
             port = {}
-            port['name'] = process['metadata']['name']
+            port['name'] = get_label_or_name(process['metadata'])
             port['type'] = process['metadata']['type']
             if component == 'inport':
                port['method']  = process['metadata']['read_meth']
@@ -203,13 +213,15 @@ def fbpToCis(data):
         conn = {}
         is_model = False
         if srckey in inports:
-           conn['input'] = inports[srckey]['name']
+           in_port = get_process_by_name(srckey)
+           conn['input'] = get_label_or_name(in_port['metadata'])
            conn['filetype'] = inports[srckey]['method']
            conn['output'] = connection['tgt']['port']
         elif tgtkey in outports:
            conn['input'] = connection['src']['port']
            conn['filetype'] = outports[tgtkey]['method']
-           conn['output'] = outports[tgtkey]['name']
+           out_port = get_process_by_name(tgtkey)
+           conn['output'] = get_label_or_name(in_port['metadata'])
         else:
            conn['input'] = connection['src']['port']
            conn['output'] = connection['tgt']['port']
