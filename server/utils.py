@@ -129,7 +129,8 @@ def convertPortsToPuts(ports):
     """Convert UI inports/outports to cisrun inputs/output."""
     puts = []
     for port in ports:
-        puts.append(port['name'])
+        name = port.get('label', port['name'])
+        puts.append(name)
     return puts
 
 
@@ -173,14 +174,22 @@ def loadSpecs(repo, path):
             specs[converted['content']['name']] = converted
     return specs
 
-def get_label_or_name(metadata):
-    return metadata.get('label', metadata.get('name', None))
+def get_label_or_name(obj, use_metadata=True):
+    if obj is None:
+        return None
+    if use_metadata:
+        return obj['metadata'].get('label', obj['metadata'].get('name', None))
+    else:
+        return obj.get('label', obj.get('name', None))
+
+
     
-def get_process_by_name(processes, name):
+def get_graph_port_label_by_name(ports, name):
+    print('Searching %s for %s' % (str(ports), name))
     ret = None
-    for key,process in processes.items():
-        if process['metadata']['name'] == name:
-            ret = process
+    for key,port in ports:
+        if port['name'] == name:
+            ret = port
             break
     return ret
 
@@ -193,7 +202,9 @@ def fbpToCis(data):
         component =  process['component']
         if component == 'inport' or component == 'outport':
             port = {}
-            port['name'] = get_label_or_name(process['metadata'])
+            port['path'] = process['metadata']['name']
+            port['label'] = process['metadata'].get('label', None)
+            port['name'] = port['label'].lower()
             port['type'] = process['metadata']['type']
             if component == 'inport':
                port['method']  = process['metadata']['read_meth']
@@ -205,6 +216,8 @@ def fbpToCis(data):
             spec = SpecModel().findOne({'content.name': component})
             models[key] = uiToCis(spec['content'])['model']
     
+
+    graph_ports = inports.items() + outports.items()
     conns = []
     for connection in data['connections']:
         srckey = connection['src']['process']
@@ -213,15 +226,15 @@ def fbpToCis(data):
         conn = {}
         is_model = False
         if srckey in inports:
-           in_port = get_process_by_name(data['processes'], srckey)
-           conn['input'] = get_label_or_name(in_port['metadata'])
+           conn['input'] = inports[srckey]['path']
            conn['filetype'] = inports[srckey]['method']
-           conn['output'] = connection['tgt']['port']
+           target_port = get_graph_port_label_by_name(graph_ports, connection['tgt']['port']) 
+           conn['output'] = target_port['label']
         elif tgtkey in outports:
-           conn['input'] = connection['src']['port']
+           source_port = get_graph_port_label_by_name(graph_ports, connection['src']['port'])
+           conn['input'] = source_port['label']
            conn['filetype'] = outports[tgtkey]['method']
-           out_port = get_process_by_name(data['processes'], tgtkey)
-           conn['output'] = get_label_or_name(in_port['metadata'])
+           conn['output'] = outports[tgtkey]['path']
         else:
            conn['input'] = connection['src']['port']
            conn['output'] = connection['tgt']['port']
