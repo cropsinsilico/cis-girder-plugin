@@ -144,6 +144,10 @@ class KubernetesJob(object):
                 # working when restartPolicy=OnFailure
                 #"backoffLimit": 5,  # failure threshold
 
+                "securityContext": {
+                    "runAsUser": 1000,
+                    "fsGroup": 100
+                },
                 "activeDeadlineSeconds": self.timeout,
                 "template": {
                     "metadata": {"name": self.job_name},
