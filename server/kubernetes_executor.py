@@ -98,8 +98,8 @@ class KubernetesJob(object):
 
         # TODO: Increase the resources requested for production pods
         # FIXME: Is this what caused the outOfCpu problem during the demo?
-        self.requests_ram = 256
-        self.requests_cpu = 200
+        self.requests_ram = 512
+        self.requests_cpu = 500
 
         if self.requests_ram > self.limits_ram:
             err_message = 'Invalid resources: requested memory (' + \
@@ -161,15 +161,6 @@ class KubernetesJob(object):
                                 "workingDir": KubernetesJob.user_pvc_mount_path,
                                 "command": ["bash"],
                                 "args": ["-c", self.command],
-                                "env": [ 
-                                    # Legacy environment vars.. these can probably be removed
-                                    { "name": "RABBIT_NAMESPACE", "value": "cis" },
-                                    { "name": "RABBIT_HOST", "value": "localhost" },
-                                    { "name": "RABBIT_PORT", "value": "5672" },
-                                    { "name": "RABBIT_USER", "value": "guest" },
-                                    { "name": "RABBIT_PASS", "value": "guest" },
-                                    { "name": "RABBIT_VHOST", "value": "%2f" }
-                                ],
                                 "resources": {
                                     "requests": {
                                         "cpu": str(self.requests_cpu) + 'm',
@@ -180,12 +171,23 @@ class KubernetesJob(object):
                                         "memory": str(self.limits_ram) + "M"
                                     }
                                 },
+                                "lifecycle": {
+                                  "postStart": {
+                                    "exec": {
+                                      "command": ["/bin/sh", "-c", "cd /usr/local/matlab/extern/engines/python && python setup.py build -b /tmp install"]
+                                    }
+                                  }
+                                },
                                 "volumeMounts": [
                                     # TODO: Where should we mount the user's PVC?
                                     {
                                         "name": "userdata",
                                         "mountPath": KubernetesJob.user_pvc_mount_path,
                                         "subPath": self.job_name
+                                    },
+                                    {
+                                        "name": "matlab",
+                                        "mountPath": "/usr/local/matlab"
                                     }
                                 ]
                             }
@@ -195,6 +197,12 @@ class KubernetesJob(object):
                             {
                                 "name": "userdata",
                                 "persistentVolumeClaim": {"claimName": "claim-" + self.username }
+                            },
+                            {
+                                "name": "matlab",
+                                "hostPath": {
+                                    "path": "/usr/local/MATLAB/R2018a"
+                                }
                             }
                         ]
                     }
@@ -332,10 +340,13 @@ class KubernetesJob(object):
         request_lambda = lambda: requests.get(\
             pods_url, headers=default_headers, verify=False)
         k8s_response = retry_request_until_ok(request_lambda, 3, 1)
-        return_val = "Error reading logs"
+        return_val = "Please wait, fetching logs..."
         if k8s_response is not None:
             job_pods = k8s_response.json()
             
+            if len(job_pods['items']) <= 0:
+                return_val = "Please wait, fetching logs..."
+                return return_val
             # FIXME: We assume there is only one matching job
             job_pod = job_pods['items'][0]
             pod_name = job_pod['metadata']['name']
@@ -353,6 +364,10 @@ class KubernetesJob(object):
             if k8s_response2 is not None:
                 return_val = k8s_response2.text
                 LOGGER.debug('Got logs: ' + return_val)
+            else:
+                return_val = "Error reading logs"
+        else:
+            return_val = "Please wait, fetching logs..."
         return return_val
 
     def is_done(self):

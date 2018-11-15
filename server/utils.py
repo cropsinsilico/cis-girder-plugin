@@ -27,8 +27,8 @@ def execGraph(yaml_graph, username):
     job_type = 'k8s.io/cis_interface'
     
     # Specify the Docker image and command(s) to run
-    docker_image = "bodom0015/cis_interface:0.6.1"
-    init_command = "mkdir -p /pvc/" + job_name + " && ls -al && cp -R /pvc/models/* /pvc/" + job_name
+    docker_image = "cropsinsilico/jupyterlab:latest"
+    init_command = "mkdir -p /pvc/" + job_name + " && cp -R /pvc/models/* /pvc/" + job_name + " && chown -R 1000:100 /pvc/" + job_name
     command = "echo '" + str(yaml_graph) + "' > graph.yml && echo Running in $(pwd): && ls -al && cisrun graph.yml"
     
     # Encode our username with Jupyter's special homebrew recipe
@@ -38,9 +38,9 @@ def execGraph(yaml_graph, username):
     namespace = "hub"
     
     # Specify some arbitrary limits
-    timeout = 120
-    num_cpus = 1
-    max_ram_mb = 512
+    timeout = 300
+    num_cpus = 2
+    max_ram_mb = 8384
         
     # Create a record in the Job database
     jobModel = JobModel()
@@ -69,9 +69,9 @@ def execGraph(yaml_graph, username):
     
 def getLogs(job_name, job_type, username): 
     # Create and run the job
-    timeout = 120
-    num_cpus = 1
-    max_ram_mb = 512
+    timeout = 300
+    num_cpus = 2
+    max_ram_mb = 8384
     job = KubernetesJob(username, job_name, "hub", timeout, None, None, None, num_cpus, max_ram_mb)
     #if not job.is_running():
         #return 'Job is not running'
