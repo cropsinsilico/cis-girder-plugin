@@ -345,7 +345,7 @@ class KubernetesJob(object):
             job_pods = k8s_response.json()
             
             if len(job_pods['items']) <= 0:
-                return_val = "Please wait, fetching logs..."
+                return_val = "Error reading logs"
                 return return_val
             # FIXME: We assume there is only one matching job
             job_pod = job_pods['items'][0]
@@ -365,9 +365,9 @@ class KubernetesJob(object):
                 return_val = k8s_response2.text
                 LOGGER.debug('Got logs: ' + return_val)
             else:
-                return_val = "Error reading logs"
+                return_val = "Please wait, fetching logs..."
         else:
-            return_val = "Please wait, fetching logs..."
+            return_val = "Error reading logs"
         return return_val
 
     def is_done(self):
