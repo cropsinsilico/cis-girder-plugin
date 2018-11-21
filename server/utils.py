@@ -182,13 +182,12 @@ def get_label_or_name(obj, use_metadata=True):
     else:
         return obj.get('label', obj.get('name', None))
 
-
     
 def get_graph_port_label_by_name(ports, name):
     print('Searching %s for %s' % (str(ports), name))
     ret = None
     for key,port in ports:
-        if port['name'] == name:
+        if port['name'].lower() == name.lower():
             ret = port
             break
     return ret
@@ -214,6 +213,18 @@ def fbpToCis(data):
                outports[key] = port
         else:
             spec = SpecModel().findOne({'content.name': component})
+            for inport in spec['content']['inports']:
+                port = {}
+                port['name'] = inport['name']
+                port['label'] = inport['label']
+                inports[port['name']] = port
+            print(inports)                
+            for outport in spec['content']['outports']:
+                port = {}
+                port['name'] = outport['name']
+                port['label'] = outport['label']
+                outports[port['name']] = port
+            print(outports)                 
             models[key] = uiToCis(spec['content'])['model']
     
 
@@ -236,13 +247,20 @@ def fbpToCis(data):
            conn['filetype'] = outports[tgtkey]['method']
            conn['output'] = outports[tgtkey]['path']
         else:
-           conn['input'] = connection['src']['port']
-           conn['output'] = connection['tgt']['port']
+           print('Finding source_port: ' + str(connection['src']['port']))
+           source_port = get_graph_port_label_by_name(graph_ports, connection['src']['port'])
+           conn['input'] = source_port['label']
+           
+           print('Finding target_port: ' + str(connection['tgt']['port']))
+           target_port = get_graph_port_label_by_name(graph_ports, connection['tgt']['port']) 
+           conn['output'] = target_port['label']
+           #conn['input'] = connection['src']['port']
+           #conn['output'] = connection['tgt']['port']
 
-        if 'metadata' in connection and 'field_names' in connection['metadata']:
-           conn['field_names'] = connection['metadata']['field_names']
-        elif srckey in models and tgtkey in models:
-           conn['field_names'] = connection['src']['port']
+        #if 'metadata' in connection and 'field_names' in connection['metadata']:
+        #   conn['field_names'] = connection['metadata']['field_names']
+        #elif srckey in models and tgtkey in models:
+        #   conn['field_names'] = connection['src']['port']
 
         if 'filetype' in conn and conn['filetype'] == 'table_array':
            conn['filetype'] = 'table'
