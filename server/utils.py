@@ -57,13 +57,16 @@ def execGraph(yaml_graph, username):
         'max_ram_mb': max_ram_mb,
     })
     
+    job_model['status'] = 2
     jobModel.save(job_model)
     
     # Create and run the job
-    k8s_job = KubernetesJob(username, job_name, namespace, timeout, init_command, command, docker_image, num_cpus, max_ram_mb)
+    k8s_job = KubernetesJob(username, job_name, namespace, timeout, init_command, command, docker_image, num_cpus, max_ram_mb, job_model)
     if not k8s_job.is_running():
         jobModel.scheduleJob(job_model)
         k8s_job.submit()
+        job_model['status'] = 3
+        jobModel.updateJob(job_model)
     
     return job_name
     
@@ -72,16 +75,20 @@ def getLogs(job_name, job_type, username):
     timeout = 300
     num_cpus = 2
     max_ram_mb = 8384
-    job = KubernetesJob(username, job_name, "hub", timeout, None, None, None, num_cpus, max_ram_mb)
-    #if not job.is_running():
-        #return 'Job is not running'
+    job = KubernetesJob(username, job_name, "hub", timeout, None, None, None, num_cpus, max_ram_mb, None)
+    if not job.is_running():
+        print('Job is not running')
+        return job.get_error_message()
     #elif not job.is_done():
-        #return 'Job is still running'
-    #elif job.is_failed():
-        #return 'Job is failed'
-    #else:
-        #return job.get_error_message() 
-    return job.get_error_message()
+    #    return 'Job is still running'
+    elif job.is_failed():
+        print('Job has failed')
+        return job.get_error_message()
+    else:
+        return job.get_error_message()
+    
+def markJobAsCompleted(job_name, job_type, username):
+    return True
 
 def cloneRepo(url, path, branch='master'):
     """Use gitpython to clone the specified repo/branch."""

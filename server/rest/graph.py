@@ -5,7 +5,7 @@ from girder.api.rest import Resource, filtermodel, RestException
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import SortDir, AccessType
 from ..models.graph import Graph as GraphModel
-from ..utils import fbpToCis, execGraph, getLogs
+from ..utils import fbpToCis, execGraph, getLogs, markJobAsCompleted
 import tempfile
 import yaml
 import pyaml
@@ -87,6 +87,7 @@ class Graph(Resource):
         self.route('POST', ('convert',), self.convertGraph)
         self.route('POST', ('execute',), self.executeGraph)
         self.route('GET', ('execute',':name','logs'), self.getLogs)
+        self.route('PUT', ('execute',':name','complete'), self.markCompleted)
 
     @access.public
     @filtermodel(model='graph', plugin='cis')
@@ -255,3 +256,22 @@ class Graph(Resource):
         
         #print('Executing graph: ' + str(yaml_graph))
         return getLogs(job_name, job_type, username)
+        
+    @access.user
+    @autoDescribeRoute(
+        Description('Return the job logs from running this graph.')
+        .param('name', "The name of the job to lookup.", paramType='path')
+        .errorResponse()
+        .errorResponse('Not authorized to read jobs.', 403)
+    )
+    def markCompleted(self, name):
+        """Get job logs from executing this graph."""
+        
+        # TODO: How to detect username?
+        user = self.getCurrentUser()
+        username = user['login']
+        job_name = name
+        job_type = 'k8s.io/cis_interface'
+        
+        #print('Executing graph: ' + str(yaml_graph))
+        return markJobAsCompleted(job_name, job_type, username)

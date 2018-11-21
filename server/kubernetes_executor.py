@@ -26,6 +26,8 @@ import json
 
 import requests
 
+from girder.plugins.jobs.models.job import Job as JobModel
+
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
 
@@ -57,7 +59,7 @@ class KubernetesJob(object):
     kubernetes_apiuri = os.getenv('KUBERNETES_SERVICE_HOST', '10.0.0.1') + ':' + \
         str(os.getenv('KUBERNETES_SERVICE_PORT', 443))
       
-    def __init__(self, username, job_name, namespace, timeout, init_command, command, docker_image, num_cpus, max_ram_mb):
+    def __init__(self, username, job_name, namespace, timeout, init_command, command, docker_image, num_cpus, max_ram_mb, job_model):
         """Initializes self.
 
         Args:
@@ -78,6 +80,7 @@ class KubernetesJob(object):
         """
         LOGGER.debug('KubernetesJob.__init__')
         self.job_name = job_name
+        self.job_model = job_model
         self.timeout = timeout
         self.namespace = namespace
         self.docker_image = docker_image
@@ -274,6 +277,7 @@ class KubernetesJob(object):
 
         """
         LOGGER.debug('KubernetesJob.is_running')
+        
 
         url = 'https://' + KubernetesJob.kubernetes_apiuri + \
             '/apis/batch/v1/namespaces/' + self.namespace + '/jobs/' + self.job_name
@@ -281,6 +285,7 @@ class KubernetesJob(object):
         LOGGER.debug('Checking that job exists: ' + url)
         response = requests.get(url, headers=default_headers, verify=False)
         ok = is_response_ok(response, 1, -1)
+            
         # If no exception was raised, our request returned a response
         return ok
 
@@ -312,6 +317,11 @@ class KubernetesJob(object):
                         return_val = condition['status'] == 'True'
                         LOGGER.debug(self.job_name + ' is failed? ' + \
                             str(return_val))
+                        # Mark job as "Error" in Girder
+                        if return_val:
+                            self.job_model['status'] = 4
+                            jobModel = JobModel()
+                            jobModel.updateJob(self.job_model)
             else:
                 LOGGER.debug('No job status conditions found: ' + \
                     str(return_val))
@@ -339,7 +349,7 @@ class KubernetesJob(object):
         LOGGER.debug('Getting pod name from ' + pods_url)
         request_lambda = lambda: requests.get(\
             pods_url, headers=default_headers, verify=False)
-        k8s_response = retry_request_until_ok(request_lambda, 3, 1)
+        k8s_response = retry_request_until_ok(request_lambda, 3, 2)
         return_val = "Please wait, fetching logs..."
         if k8s_response is not None:
             job_pods = k8s_response.json()
@@ -360,7 +370,7 @@ class KubernetesJob(object):
             LOGGER.debug('Getting logs from ' + logs_url)
             request_lambda2 = lambda: requests.get(\
                 logs_url, headers=default_headers, verify=False)
-            k8s_response2 = retry_request_until_ok(request_lambda2, 3, 1)
+            k8s_response2 = retry_request_until_ok(request_lambda2, 3, 2)
             if k8s_response2 is not None:
                 return_val = k8s_response2.text
                 LOGGER.debug('Got logs: ' + return_val)
@@ -386,7 +396,7 @@ class KubernetesJob(object):
         LOGGER.debug('Getting job status from ' + url)
         request_lambda = lambda: requests.get(\
             url, headers=default_headers, verify=False)
-        k8s_response = retry_request_until_ok(request_lambda, 1, 0)
+        k8s_response = retry_request_until_ok(request_lambda, 1, 2)
         return_val = False
         if k8s_response is not None:
             json_resp = json.loads(k8s_response.text)
@@ -399,6 +409,12 @@ class KubernetesJob(object):
                         return_val = condition['status'] == 'True'
                         LOGGER.debug(self.job_name + ' is done? ' + \
                             str(return_val))
+        
+                        # Mark job as "Success" in Girder
+                        if return_val:
+                            self.job_model['status'] = 3
+                            jobModel = JobModel()
+                            jobModel.updateJob(self.job_model)
             else:
                 LOGGER.debug('No job status conditions found: ' + str(return_val))
         return return_val
@@ -487,7 +503,7 @@ class KubernetesJob(object):
         return_val = []
         request_lambda = lambda: requests.get(\
             url, headers=default_headers, verify=False)
-        k8s_response = retry_request_until_ok(request_lambda, 1, 0)
+        k8s_response = retry_request_until_ok(request_lambda, 1, 2)
         if k8s_response is not None:
             return_val = [job['name'] for job in k8s_response.json()]
         return return_val
