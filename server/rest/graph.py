@@ -5,7 +5,7 @@ from girder.api.rest import Resource, filtermodel, RestException
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import SortDir, AccessType
 from ..models.graph import Graph as GraphModel
-from ..utils import fbpToCis
+from ..utils import fbpToCis, execGraph, getLogs
 import tempfile
 import yaml
 import pyaml
@@ -85,6 +85,8 @@ class Graph(Resource):
         self.route('PUT', (':id',), self.updateGraph)
         self.route('DELETE', (':id',), self.deleteGraph)
         self.route('POST', ('convert',), self.convertGraph)
+        self.route('POST', ('execute',), self.executeGraph)
+        self.route('GET', ('execute',':name','logs'), self.getLogs)
 
     @access.public
     @filtermodel(model='graph', plugin='cis')
@@ -200,3 +202,56 @@ class Graph(Resource):
 
         self.setRawResponse()
         return pyaml.dump(cisgraph)
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Execute cisrun on a graph and return the result.')
+        .jsonParam('graph', 'Name and attributes of the spec.',
+                   paramType='body')
+        .errorResponse()
+        .errorResponse('Not authorized to execute graphs.', 403)
+    )
+    def executeGraph(self, graph):
+        """Execute graph."""
+        cisgraph = fbpToCis(graph['content'])
+        
+        user = self.getCurrentUser()
+        username = user['login']
+
+        # Write to temp file and validate
+        tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
+                                              delete=False)
+        yaml.safe_dump(cisgraph, tmpfile, default_flow_style=False)
+        yml_prep = prep_yaml(tmpfile)
+        os.remove(tmpfile.name)
+
+        v = get_schema().validator
+        yml_norm = v.normalized(yml_prep)
+        if not v.validate(yml_norm):
+            print(v.errors)
+            raise RestException('Invalid graph %s', 400, v.errors)
+
+        self.setRawResponse()
+        yaml_graph = pyaml.dump(cisgraph)
+        
+        #print('Executing graph: ' + str(yaml_graph))
+        return execGraph(yaml_graph, username)
+        
+    @access.user
+    @autoDescribeRoute(
+        Description('Return the job logs from running this graph.')
+        .param('name', "The name of the job to lookup.", paramType='path')
+        .errorResponse()
+        .errorResponse('Not authorized to read jobs.', 403)
+    )
+    def getLogs(self, name):
+        """Get job logs from executing this graph."""
+        
+        # TODO: How to detect username?
+        user = self.getCurrentUser()
+        username = user['login']
+        job_name = name
+        job_type = 'k8s.io/cis_interface'
+        
+        #print('Executing graph: ' + str(yaml_graph))
+        return getLogs(job_name, job_type, username)
