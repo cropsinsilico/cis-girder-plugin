@@ -24,12 +24,12 @@ def execGraph(yaml_graph, username):
     
     # Give our job a unique name
     job_name = username + "-" + str(datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
-    job_type = 'k8s.io/cis_interface'
+    job_type = 'k8s.io/yggdrasil'
     
     # Specify the Docker image and command(s) to run
     docker_image = "cropsinsilico/jupyterlab:latest"
     init_command = "mkdir -p /pvc/" + job_name + " && cp -R /pvc/models/* /pvc/" + job_name + " && chown -R 1000:100 /pvc/" + job_name
-    command = "echo '" + str(yaml_graph) + "' > graph.yml && echo Running in $(pwd): && ls -al && cisrun graph.yml"
+    command = "echo '" + str(yaml_graph) + "' > graph.yml && echo Running in $(pwd): && ls -al && yggrun graph.yml"
     
     # Encode our username with Jupyter's special homebrew recipe
     username = jupyterUserEncode(username)
@@ -93,7 +93,7 @@ def cloneRepo(url, path, branch='master'):
 
 
 def cisToUI(cismodel):
-    """Convert from cisrun to UI format."""
+    """Convert from yggrun to UI format."""
     uimodel = {}
     for key in cismodel.keys():
         if key == 'name':
@@ -109,7 +109,7 @@ def cisToUI(cismodel):
 
 
 def uiToCis(uimodel):
-    """Convert dict from ui format to cisrun format."""
+    """Convert dict from ui format to yggrun format."""
     cismodel = {}
     for key in uimodel.keys():
         if key == 'name':
@@ -126,7 +126,7 @@ def uiToCis(uimodel):
 
 
 def convertPortsToPuts(ports):
-    """Convert UI inports/outports to cisrun inputs/output."""
+    """Convert UI inports/outports to yggrun inputs/output."""
     puts = []
     for port in ports:
         name = port.get('label', port['name'])
@@ -135,7 +135,7 @@ def convertPortsToPuts(ports):
 
 
 def convertInputsToPorts(inputs):
-    """Convert cisrun inputs/output to UI inports/outports."""
+    """Convert yggrun inputs/output to UI inports/outports."""
     ports = []
     for input in inputs:
         port = {}
@@ -149,7 +149,7 @@ def convertInputsToPorts(inputs):
 def loadSpecs(repo, path):
     """Load model specs from the specified temporary path.
 
-    Convert from the cisrun YAML to the flow-based-protocol format required
+    Convert from the yggrun YAML to the flow-based-protocol format required
     for UI.  The "content" nested dict is a convention used for storing
     these objects as blobs in Girder.
     """
