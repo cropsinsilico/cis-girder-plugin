@@ -35,7 +35,7 @@ def execGraph(yaml_graph, username):
     username = jupyterUserEncode(username)
     
     # Job must run in same namespace as the PVC
-    namespace = "hub"
+    namespace = "hub-staging"
     
     # Specify some arbitrary limits
     timeout = 300
@@ -72,7 +72,7 @@ def getLogs(job_name, job_type, username):
     timeout = 300
     num_cpus = 2
     max_ram_mb = 8384
-    job = KubernetesJob(username, job_name, "hub", timeout, None, None, None, num_cpus, max_ram_mb)
+    job = KubernetesJob(username, job_name, "hub-staging", timeout, None, None, None, num_cpus, max_ram_mb)
     #if not job.is_running():
         #return 'Job is not running'
     #elif not job.is_done():

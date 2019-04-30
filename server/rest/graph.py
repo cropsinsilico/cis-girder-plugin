@@ -12,6 +12,7 @@ import pyaml
 import os
 from yggdrasil.yamlfile import prep_yaml
 from yggdrasil.schema import get_schema
+from yggdrasil.backwards import as_str
 
 graphDef = {
     "description": "Object representing a Crops in Silico model graph.",
@@ -187,11 +188,13 @@ class Graph(Resource):
         """Convert graph."""
         cisgraph = fbpToCis(graph['content'])
 
+        cisgraph = as_str(cisgraph, recurse=True, allow_pass=True)
+        
         # Write to temp file and validate
         tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
                                               delete=False)
         yaml.safe_dump(cisgraph, tmpfile, default_flow_style=False)
-        yml_prep = prep_yaml(tmpfile)
+        yml_prep = prep_yaml(tmpfile.name)
         os.remove(tmpfile.name)
 
         s = get_schema()
@@ -216,15 +219,17 @@ class Graph(Resource):
     def executeGraph(self, graph):
         """Execute graph."""
         cisgraph = fbpToCis(graph['content'])
-        
+
         user = self.getCurrentUser()
         username = user['login']
 
+        cisgraph = as_str(cisgraph, recurse=True, allow_pass=True)
+        
         # Write to temp file and validate
         tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
                                               delete=False)
         yaml.safe_dump(cisgraph, tmpfile, default_flow_style=False)
-        yml_prep = prep_yaml(tmpfile)
+        yml_prep = prep_yaml(tmpfile.name)
         os.remove(tmpfile.name)
 
         s = get_schema()

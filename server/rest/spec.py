@@ -11,6 +11,7 @@ import pyaml
 import yaml
 from yggdrasil.yamlfile import prep_yaml
 from yggdrasil.schema import get_schema
+from yggdrasil.backwards import as_str
 import os
 import tempfile
 import cherrypy
@@ -202,11 +203,13 @@ class Spec(Resource):
         """Convert spec."""
         cisspec = uiToCis(spec['content'])
 
+        cisspec = as_str(cisspec, recurse=True, allow_pass=True)
+        
         # Write to temp file and validate
         tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
                                               delete=False)
         yaml.safe_dump(cisspec, tmpfile, default_flow_style=False)
-        yml_prep = prep_yaml(tmpfile)
+        yml_prep = prep_yaml(tmpfile.name)
         os.remove(tmpfile.name)
 
         s = get_schema()
