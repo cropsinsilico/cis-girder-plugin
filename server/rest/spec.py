@@ -9,8 +9,9 @@ from ..models.spec import Spec as SpecModel
 from ..utils import ingest, uiToCis
 import pyaml
 import yaml
-from cis_interface.yamlfile import prep_yaml
-from cis_interface.schema import get_schema
+from yggdrasil.yamlfile import prep_yaml
+from yggdrasil.schema import get_schema
+from yggdrasil.backwards import as_str
 import os
 import tempfile
 import cherrypy
@@ -192,7 +193,7 @@ class Spec(Resource):
 
     @access.user
     @autoDescribeRoute(
-        Description('Convert a spec from FBP to cisrun format.')
+        Description('Convert a spec from FBP to yggrun format.')
         .jsonParam('spec', 'Name and attributes of the spec.',
                    paramType='body')
         .errorResponse()
@@ -202,18 +203,22 @@ class Spec(Resource):
         """Convert spec."""
         cisspec = uiToCis(spec['content'])
 
+        cisspec = as_str(cisspec, recurse=True, allow_pass=True)
+        
         # Write to temp file and validate
         tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
                                               delete=False)
         yaml.safe_dump(cisspec, tmpfile, default_flow_style=False)
-        yml_prep = prep_yaml(tmpfile)
+        yml_prep = prep_yaml(tmpfile.name)
         os.remove(tmpfile.name)
 
-        v = get_schema().validator
-        yml_norm = v.normalized(yml_prep)
-        if not v.validate(yml_norm):
-            print(v.errors)
-            raise RestException('Invalid model %s', 400, v.errors)
+        s = get_schema()
+        yml_norm = s.normalize(yml_prep)
+        try:
+            s.validate(yml_norm)
+        except BaseException as e:
+            print(e)
+            raise RestException('Invalid model %s', 400, e)
 
         self.setRawResponse()
         return pyaml.dump(cisspec)

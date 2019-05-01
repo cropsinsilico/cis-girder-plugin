@@ -10,8 +10,9 @@ import tempfile
 import yaml
 import pyaml
 import os
-from cis_interface.yamlfile import prep_yaml
-from cis_interface.schema import get_schema
+from yggdrasil.yamlfile import prep_yaml
+from yggdrasil.schema import get_schema
+from yggdrasil.backwards import as_str
 
 graphDef = {
     "description": "Object representing a Crops in Silico model graph.",
@@ -177,7 +178,7 @@ class Graph(Resource):
 
     @access.public
     @autoDescribeRoute(
-        Description('Convert a graph from FBP to cisrun format.')
+        Description('Convert a graph from FBP to yggrun format.')
         .jsonParam('graph', 'Name and attributes of the spec.',
                    paramType='body')
         .errorResponse()
@@ -187,25 +188,29 @@ class Graph(Resource):
         """Convert graph."""
         cisgraph = fbpToCis(graph['content'])
 
+        cisgraph = as_str(cisgraph, recurse=True, allow_pass=True)
+        
         # Write to temp file and validate
         tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
                                               delete=False)
         yaml.safe_dump(cisgraph, tmpfile, default_flow_style=False)
-        yml_prep = prep_yaml(tmpfile)
+        yml_prep = prep_yaml(tmpfile.name)
         os.remove(tmpfile.name)
 
-        v = get_schema().validator
-        yml_norm = v.normalized(yml_prep)
-        if not v.validate(yml_norm):
-            print(v.errors)
-            raise RestException('Invalid graph %s', 400, v.errors)
+        s = get_schema()
+        yml_norm = s.normalize(yml_prep)
+        try:
+            s.validate(yml_norm)
+        except BaseException as e:
+            print(e)
+            raise RestException('Invalid graph %s', 400, e)
 
         self.setRawResponse()
         return pyaml.dump(cisgraph)
 
     @access.user
     @autoDescribeRoute(
-        Description('Execute cisrun on a graph and return the result.')
+        Description('Execute yggrun on a graph and return the result.')
         .jsonParam('graph', 'Name and attributes of the spec.',
                    paramType='body')
         .errorResponse()
@@ -214,22 +219,26 @@ class Graph(Resource):
     def executeGraph(self, graph):
         """Execute graph."""
         cisgraph = fbpToCis(graph['content'])
-        
+
         user = self.getCurrentUser()
         username = user['login']
 
+        cisgraph = as_str(cisgraph, recurse=True, allow_pass=True)
+        
         # Write to temp file and validate
         tmpfile = tempfile.NamedTemporaryFile(suffix="yml", prefix="cis",
                                               delete=False)
         yaml.safe_dump(cisgraph, tmpfile, default_flow_style=False)
-        yml_prep = prep_yaml(tmpfile)
+        yml_prep = prep_yaml(tmpfile.name)
         os.remove(tmpfile.name)
 
-        v = get_schema().validator
-        yml_norm = v.normalized(yml_prep)
-        if not v.validate(yml_norm):
-            print(v.errors)
-            raise RestException('Invalid graph %s', 400, v.errors)
+        s = get_schema()
+        yml_norm = s.normalize(yml_prep)
+        try:
+            s.validate(yml_norm)
+        except BaseException as e:
+            print(e)
+            raise RestException('Invalid graph %s', 400, e)
 
         self.setRawResponse()
         yaml_graph = pyaml.dump(cisgraph)
@@ -251,7 +260,7 @@ class Graph(Resource):
         user = self.getCurrentUser()
         username = user['login']
         job_name = name
-        job_type = 'k8s.io/cis_interface'
+        job_type = 'k8s.io/yggdrasil'
         
         #print('Executing graph: ' + str(yaml_graph))
         return getLogs(job_name, job_type, username)
